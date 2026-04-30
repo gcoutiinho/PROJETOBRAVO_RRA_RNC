@@ -634,13 +634,18 @@ function readRows(type) {
 
 function validatePayload(type, payload) {
   const missing = [];
-  if (!payload.dataHoje)      missing.push('Data do reporte');
-  if (!payload.nfNumero)      missing.push('Nº da NF');
-  if (!payload.tipoOperacao)  missing.push('Tipo de operação');
-  if (!payload.emitente)      missing.push('Emitente');
-  if (!payload.destinatario)  missing.push('Destinatário');
-  if (!payload.cliente)       missing.push('Cliente para reporte');
-  if (!payload.agendamento)   missing.push('Agendamento');
+
+  // Os campos do formulário ficam dentro de payload.cabecalho
+  const c = payload.cabecalho || {};
+
+  if (!c.dataHoje)      missing.push('Data do reporte');
+  if (!c.nfNumero)      missing.push('Nº da NF');
+  if (!c.tipoOperacao)  missing.push('Tipo de operação');
+  if (!c.emitente)      missing.push('Emitente');
+  if (!c.destinatario)  missing.push('Destinatário');
+  if (!c.cliente)       missing.push('Cliente para reporte');
+  if (!c.agendamento)   missing.push('Agendamento');
+
   if (!payload.conferente)    missing.push(`Conferente (${type})`);
   if (!payload.itens?.length) missing.push(`Ao menos 1 item no ${type}`);
 
@@ -648,8 +653,9 @@ function validatePayload(type, payload) {
     ? ['produto', 'lote', 'quantidade', 'descricao']
     : ['produto', 'loteNF', 'qtdNF', 'loteFisico', 'qtdFisico', 'descricao'];
 
-  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k])))
+  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k]))) {
     missing.push('Campos obrigatórios em todos os itens (produto/lotes/qtd/descrição)');
+  }
 
   return missing;
 }
@@ -716,6 +722,9 @@ const payload = {
   }
 
   const missing = validatePayload(currentType, payload);
+    // Debug rápido (opcional): descomente para ver o que está sendo enviado
+    // console.debug("payload", payload);
+    // console.debug("missing", missing);
   if (missing.length) {
     setStatus('err', 'Preencha os campos obrigatórios: ' + missing.join(' • '));
     return;
