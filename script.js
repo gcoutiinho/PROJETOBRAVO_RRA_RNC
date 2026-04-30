@@ -63,19 +63,17 @@ const CONFIG = {
   ],
 
   BASE_RRA: [
-    "BOMBONA AMASSADA",
-    "CAIXAS AMASSADAS",
-    "CAIXAS RASGADAS E AMASSADAS",
-    "CAIXAS RASGADAS",
-    "FRACIONADO E VENCIDO",
+    "SUJO",
+    "AMASSADO",
+    "RASGADO",
     "FRACIONADO",
-    "FRACIONADO, SUJO E VENCIDO",
-    "PRODUTO AVARIADO",
+    "VENCIDO",
     "PRODUTO BOM",
-    "ROTULO DANIFICADO",
-    "SUJO E AMASSADO",
-    "SUJO E RASGADO",
-    "SUJO"
+    "RÓTULO DANIFICADO",
+    "VAZANDO",
+    "AMOSTRA",
+    "CARGA SEM MADEIRITE",
+    "A VENCER"
   ],
 
     BASE_CLIENTES: [
@@ -526,10 +524,9 @@ const ROW_SCHEMA = {
     { key: 'quantidade', placeholder: 'Ex.: 10,5', numeric: true },
     
     { key: 'unitizador', placeholder: 'Ex.: B3031112223' },
-    { key: 'tipoMov',    placeholder: 'Ex.: Bloqueado' },
+    { key: 'tipoMov',    placeholder: 'Ex.: 7000181503' },
 
-    { key: 'descricao',  select: () => BASE_RRA, selectPlaceholder: 'Selecione o tipo de avaria...' }
-  ],
+    { key: 'descricao',  multiSelect: () => BASE_RRA }],
   RNC: [
     { key: 'codigo',     placeholder: 'Ex.: 55971', list: 'lista_codigos' },
     { key: 'produto',    placeholder: 'Ex.: KLERAT PELLET' },
@@ -582,9 +579,38 @@ function addRow(type) {
   const tr    = document.createElement('tr');
 
   const cells = ROW_SCHEMA[type].map(col => {
+    // RRA: permitir múltiplas avarias (somar seleções)
+    if (col.multiSelect) {
+      const options = col.multiSelect();
+
+      const selectInicial = `
+        <span class="avaria-item">
+          <select data-k="${col.key}" class="multi-select" onchange="atualizarOutrosSelects(this, '${col.key}')">
+            ${optionList(options, 'Selecione...')}
+          </select>
+          <button type="button" class="btn-remove-avaria" onclick="removerSelect(this, '${col.key}')">✕</button>
+        </span>`;
+
+      const botaoOutro = `
+        <button type="button" class="btn btn-small" onclick="adicionarNovoSelect(this, '${col.key}')">+ Outro</button>`;
+
+      return `
+        <td>
+          <div class="multi-select-group">
+            <div class="avaria-selects">
+              ${selectInicial}
+            </div>
+            ${botaoOutro}
+          </div>
+        </td>`;
+    }
+
+    // Select comum (RNC e demais)
     if (col.select) {
       return `<td><select data-k="${col.key}">${optionList(col.select(), col.selectPlaceholder)}</select></td>`;
     }
+
+    // Input comum
     const num = col.numeric ? NUMERIC_HANDLER : '';
     return `<td><input data-k="${col.key}" placeholder="${escapeHtml(col.placeholder)}" ${num}/></td>`;
   });
@@ -593,10 +619,91 @@ function addRow(type) {
     `<td><button class="btn danger" type="button" onclick="removeRow(this)">Remover</button></td>`;
 
   tbody.appendChild(tr);
-applyCodigoProdutoToLastRow(type);
-	
+  applyCodigoProdutoToLastRow(type);
 }
 
+function removeRow(btn) { btn.closest('tr')?.remove(); }
+
+
+
+/* ================================
+   RRA: Múltiplas avarias (somar seleções)
+================================ */
+
+function adicionarNovoSelect(btn, key) {
+  const group = btn.closest('.multi-select-group');
+  if (!group) return;
+
+  const wrapper = document.createElement('span');
+  wrapper.className = 'avaria-item';
+
+  const novoSelect = document.createElement('select');
+  novoSelect.className = 'multi-select';
+  novoSelect.setAttribute('data-k', key);
+  novoSelect.onchange = () => atualizarOutrosSelects(novoSelect, key);
+
+  // opções disponíveis (evita duplicar)
+  const selecionados = [...group.querySelectorAll('.multi-select')]
+    .map(s => s.value)
+    .filter(v => v);
+
+  const options = BASE_RRA.filter(opt => !selecionados.includes(opt));
+
+  novoSelect.innerHTML =
+    '<option value="">Selecione...</option>' +
+    options.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('');
+
+  const btnRemover = document.createElement('button');
+  btnRemover.type = 'button';
+  btnRemover.className = 'btn-remove-avaria';
+  btnRemover.textContent = '✕';
+  btnRemover.onclick = () => removerSelect(btnRemover, key);
+
+  wrapper.appendChild(novoSelect);
+  wrapper.appendChild(btnRemover);
+
+  const selectsContainer = group.querySelector('.avaria-selects');
+  selectsContainer.appendChild(wrapper);
+
+  atualizarOutrosSelects(novoSelect, key);
+}
+
+function removerSelect(botao, key) {
+  const item  = botao.closest('.avaria-item');
+  const group = botao.closest('.multi-select-group');
+  if (!item || !group) return;
+
+  // mantém ao menos 1 select
+  if (group.querySelectorAll('.avaria-item').length <= 1) return;
+
+  item.remove();
+
+  // revalida opções restantes
+  group.querySelectorAll('.multi-select').forEach(sel => atualizarOutrosSelects(sel, key));
+}
+
+// Atualiza opções para evitar avarias repetidas no mesmo item
+function atualizarOutrosSelects(selectAlterado, key) {
+  const group = selectAlterado.closest('.multi-select-group');
+  if (!group) return;
+
+  const selecionados = [...group.querySelectorAll('.multi-select')]
+    .map(sel => sel.value)
+    .filter(v => v);
+
+  group.querySelectorAll('.multi-select').forEach(select => {
+    const valorAtual = select.value;
+
+    const options = BASE_RRA.filter(opt => !selecionados.includes(opt) || opt === valorAtual);
+
+    select.innerHTML =
+      '<option value="">Selecione...</option>' +
+      options.map(opt => `
+        <option value="${escapeHtml(opt)}" ${opt === valorAtual ? 'selected' : ''}>
+          ${escapeHtml(opt)}
+        </option>`).join('');
+  });
+}
 function removeRow(btn) { btn.closest('tr')?.remove(); }
 
 /* ================================
@@ -620,14 +727,29 @@ function readCommon() {
 
 function readRows(type) {
   const keys = ROW_SCHEMA[type].map(c => c.key);
+
   return [...document.querySelectorAll(`#table${type} tbody tr`)]
     .map(tr => {
-      const get = k => tr.querySelector(`[data-k="${k}"]`)?.value?.trim() || '';
-      return Object.fromEntries(keys.map(k => [k, get(k)]));
+      const rowData = {};
+
+      keys.forEach(k => {
+        const col = ROW_SCHEMA[type].find(c => c.key === k);
+
+        if (col && col.multiSelect) {
+          // pega todos os selects do mesmo campo e concatena
+          const values = [...tr.querySelectorAll(`[data-k="${k}"].multi-select`)]
+            .map(s => s.value)
+            .filter(v => v);
+          rowData[k] = values.join(' e ');
+        } else {
+          rowData[k] = tr.querySelector(`[data-k="${k}"]`)?.value?.trim() || '';
+        }
+      });
+
+      return rowData;
     })
     .filter(r => Object.values(r).some(v => v));
 }
-
 /* ================================
    CORREÇÃO 7: validatePayload sem if/else redundante
 ================================ */

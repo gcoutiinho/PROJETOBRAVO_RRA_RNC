@@ -32,8 +32,8 @@
 
 
 .table input[data-k="unitizador"] {
-  min-width: 120px;
-  width: 120px;
+  min-width: 170px;
+  width: 170px;
 }
 
 .autocomplete-item {
@@ -773,9 +773,10 @@ button:focus,
 
 /* Código – bem menor */
 .table input[data-k="codigo"] {
-  width: 90px;
-  min-width: 90px;
+  width: 110px;
+  min-width: 110px;
   text-align: center;
+  font-weight: 500;
 }
 
 /* Quantidades – menores */
@@ -793,6 +794,56 @@ button:focus,
 }
 
 .table input[data-k="loteNF"], .table input[data-k="loteFisico"], .table input[data-k="lote"] {
-  min-width: 100px;
-  width: 100px;
+  min-width: 130px;
+  width: 130px;
+  text-align: center;
+}
+
+
+/* ================================
+   RRA: múltiplas avarias (somar seleções)
+================================ */
+.multi-select-group {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.avaria-selects {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.avaria-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.avaria-item select.multi-select {
+  min-width: 200px;
+}
+
+.btn-remove-avaria {
+  background: transparent;
+  color: var(--err);
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.btn-remove-avaria:hover {
+  background: rgba(255, 111, 111, 0.2);
+  border-radius: 4px;
+}
+
+.btn.btn-small {
+  padding: 8px 12px;
+  font-size: 12px;
+  height: auto;
 }
