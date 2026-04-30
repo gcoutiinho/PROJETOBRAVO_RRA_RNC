@@ -9,12 +9,11 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body>
+<body onload="carregarClientes()">
 
-<!-- Acessibilidade: link para pular direto ao conteúdo principal -->
+<!-- Skip link para acessibilidade -->
 <a href="#main-content" class="skip-link">Pular para conteúdo principal</a>
 
-<!-- Cabeçalho: marca, menu e ações -->
 <header>
   <div class="wrap">
     <div class="logo-area">
@@ -48,12 +47,11 @@
   </div>
 </header>
 
-<!-- Conteúdo principal -->
 <main id="main-content">
 
   <div class="card">
 
-    <!-- Abas: alterna entre RRA e RNC -->
+    <!-- TABS -->
     <div class="tabs">
       <button id="tab-rra" class="tab active" onclick="switchForm('RRA')" aria-pressed="true" role="tab">RRA (Avaria)</button>
       <button id="tab-rnc" class="tab" onclick="switchForm('RNC')" aria-pressed="false" role="tab">RNC (Não Conformidade)</button>
@@ -61,7 +59,7 @@
 
     <div class="body">
 
-      <!-- Cabeçalho do reporte: dados da NF e destinatários -->
+      <!-- DADOS DA NF -->
       <h3 class="section-title">Dados da NF</h3>
 
       <div class="grid">
@@ -131,7 +129,7 @@
         </div>
       </div>
 
-      <!-- Formulário RRA (Avaria) -->
+      <!-- ================= RRA ================= -->
       <div id="form-RRA">
 
         <h3 class="section-title">Itens do RRA</h3>
@@ -161,7 +159,7 @@
         <h3 class="section-title">Conferente</h3>
         <input id="conferenteRRA" placeholder="Nome do conferente" aria-label="Nome do conferente RRA" />
 
-        <!-- Anexos do reporte -->
+        <!-- ANEXOS -->
         <h3 class="section-title">Anexos</h3>
         
         <div class="grid">
@@ -179,7 +177,7 @@
         </div>
       </div>
 
-      <!-- Formulário RNC (Não Conformidade) -->
+      <!-- ================= RNC ================= -->
       <div id="form-RNC" style="display:none">
 
         <h3 class="section-title">Itens da RNC</h3>
@@ -209,7 +207,7 @@
         <h3 class="section-title">Conferente</h3>
         <input id="conferenteRNC" placeholder="Nome do conferente" aria-label="Nome do conferente RNC" />
 
-        <!-- Anexos do reporte -->
+        <!-- ANEXOS -->
         <h3 class="section-title">Anexos</h3>
         
         <div class="grid">
@@ -227,7 +225,7 @@
         </div>
       </div>
 
-      <!-- Ações do formulário -->
+      <!-- AÇÕES -->
 
       <div class="row-actions">
         <button id="btnEnviar" class="btn" onclick="submitForm()">Enviar</button>
@@ -240,7 +238,7 @@
   </div>
 </main>
 
-<!-- Painel Administrativo (Admin) -->
+<!-- Interface de Administração -->
 <div id="adminPanel" class="admin-panel" style="display:none;">
   <div class="card">
     <div class="admin-header">
@@ -295,7 +293,7 @@
   </div>
 </div>
 
-<!-- Modal: Login do Admin -->
+<!-- Modal de Login Admin -->
 <div id="adminLoginModal" class="modal" style="display:none;">
   <div class="modal-content">
     <h3>Login Administrador</h3>
@@ -316,9 +314,8 @@
 
 </footer>
 
-<!-- Scripts -->
 <script src="produtos.js"></script>
-<script src="script.js" defer></script>
+<script src="script.js"></script>
 
 
 </body>

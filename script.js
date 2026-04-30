@@ -1,20 +1,8 @@
-/* ==========================================================
-   Portal RRA / RNC — Script
-   Melhorias aplicadas (versão segura):
-   - Init via DOMContentLoaded (remove dependência de onload)
-   - validatePayload corrigido para o payload atual
-   - Organização: escopo isolado (IIFE) + export mínimo para handlers
-   ========================================================== */
+/**********************
+ * CONFIG - velho
+ **********************/
 
-(function () {
-  'use strict';
-
-/* ==========================================================
-   CONFIGURAÇÕES GERAIS
-   - URLs do Power Automate
-   - Listas base (fallback do localStorage)
-   ========================================================== */
-
+let PRODUTOS_CARREGADOS = false
 let PRODUTOS_DESC_INDEX = [];
 
 const CONFIG = {
@@ -47,7 +35,7 @@ const CONFIG = {
     "VENDA"
   ],
 
-  // Senha nunca fica em texto puro no código.
+  // CORREÇÃO 1: Senha nunca fica em texto puro no código.
   // Use um hash SHA-256 da senha real. Para gerar o hash:
   //   1. Abra o console do navegador (F12)
   //   2. Cole e execute:
@@ -75,17 +63,19 @@ const CONFIG = {
   ],
 
   BASE_RRA: [
-    "SUJO",
-    "AMASSADO",
-    "RASGADO",
+    "BOMBONA AMASSADA",
+    "CAIXAS AMASSADAS",
+    "CAIXAS RASGADAS E AMASSADAS",
+    "CAIXAS RASGADAS",
+    "FRACIONADO E VENCIDO",
     "FRACIONADO",
-    "VENCIDO",
+    "FRACIONADO, SUJO E VENCIDO",
+    "PRODUTO AVARIADO",
     "PRODUTO BOM",
-    "RÓTULO DANIFICADO",
-    "VAZANDO",
-    "AMOSTRA",
-    "CARGA SEM MADEIRITE",
-    "A VENCER"
+    "ROTULO DANIFICADO",
+    "SUJO E AMASSADO",
+    "SUJO E RASGADO",
+    "SUJO"
   ],
 
     BASE_CLIENTES: [
@@ -359,9 +349,9 @@ let tiposOperacao  = loadFromStorage('tiposOperacao',  CONFIG.tiposOperacao);
 
 let isAdminLogged = false;
 
-/* ==========================================================
-   UTILITÁRIOS
-   ========================================================== */
+/* ================================
+   UTILITÁRIOS GERAIS
+================================ */
 
 function isoToday() {
   const d = new Date();
@@ -390,9 +380,8 @@ function escapeHtml(str) {
     .replaceAll('"',  '&quot;')
     .replaceAll("'",  '&#039;');
 }
-/**
- * Gera hash SHA-256 via Web Crypto API (usado no login Admin)
- */
+
+// CORREÇÃO 1: hash SHA-256 via Web Crypto API (sem bibliotecas externas)
 async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -425,7 +414,7 @@ function fileToBase64(file) {
 }
 
 /* ================================
-   Modal customizado
+   CORREÇÃO 6: Modal customizado
    Substitui prompt() / alert() / confirm() nativos
    que bloqueiam a UI e não podem ser estilizados
 ================================ */
@@ -467,9 +456,9 @@ function showModal({ title, message = '', input = false, placeholder = '', confi
   });
 }
 
-/* ==========================================================
-   STATUS / FEEDBACK
-   ========================================================== */
+/* ================================
+   STATUS
+================================ */
 
 function setStatus(kind, message) {
   const el = document.getElementById('status');
@@ -478,9 +467,11 @@ function setStatus(kind, message) {
   if (kind) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-/* ==========================================================
-   FORMULÁRIO (RRA / RNC)
-   ========================================================== */
+function clearStatus() { setStatus('', ''); }
+
+/* ================================
+   FORMULÁRIO
+================================ */
 
 function updateDestinatarios() {
   const cliente = document.getElementById('cliente').value;
@@ -503,11 +494,11 @@ function switchForm(type) {
   document.getElementById('form-RRA').style.display = type === 'RRA' ? 'block' : 'none';
   document.getElementById('form-RNC').style.display = type === 'RNC' ? 'block' : 'none';
 
-  // Reinicia as tabelas ao alternar entre RRA e RNC
+  // ✅ RESET DOS ITENS (ESSENCIAL)
   resetItensPorTipo('RRA');
   resetItensPorTipo('RNC');
 
-  setStatus('', '');
+  clearStatus();
 }
 
 function optionList(options, placeholder = 'Selecione...') {
@@ -516,7 +507,7 @@ function optionList(options, placeholder = 'Selecione...') {
 }
 
 /* ================================
-   addRow sem duplicação
+   CORREÇÃO 2: addRow sem duplicação
    Schema centralizado elimina o if/else RRA vs RNC
 ================================ */
 
@@ -535,9 +526,9 @@ const ROW_SCHEMA = {
     { key: 'quantidade', placeholder: 'Ex.: 10,5', numeric: true },
     
     { key: 'unitizador', placeholder: 'Ex.: B3031112223' },
-    { key: 'tipoMov',    placeholder: 'Ex.: 7000173973' },
+    { key: 'tipoMov',    placeholder: 'Ex.: Bloqueado' },
 
-    { key: 'descricao',  multiSelect: () => BASE_RRA }
+    { key: 'descricao',  select: () => BASE_RRA, selectPlaceholder: 'Selecione o tipo de avaria...' }
   ],
   RNC: [
     { key: 'codigo',     placeholder: 'Ex.: 55971', list: 'lista_codigos' },
@@ -567,10 +558,10 @@ function bindCodigoProdutoRow(tr) {
 
   if (!inputProduto) return;
 
-  //  autocomplete por descrição
+  // ✅ autocomplete por descrição
   attachProdutoAutocomplete(inputProduto, inputCodigo);
 
-  //  lookup por código (se existir)
+  // ✅ lookup por código (se existir)
   if (inputCodigo) {
     inputCodigo.addEventListener('blur', () => {
       const codigo = inputCodigo.value.trim();
@@ -591,38 +582,6 @@ function addRow(type) {
   const tr    = document.createElement('tr');
 
   const cells = ROW_SCHEMA[type].map(col => {
-    if (col.multiSelect) {
-      // Permite selecionar múltiplas avarias no mesmo item (RRA)
-      const options = col.multiSelect();
-      const selectInicial = `
-  <span class="avaria-item">
-    <select data-k="${col.key}" class="multi-select"
-      onchange="atualizarOutrosSelects(this, '${col.key}')">
-      ${optionList(options, 'Selecione...')}
-    </select>
-    <button type="button"
-      class="btn-remove-avaria"
-      onclick="removerSelect(this, '${col.key}')">✕</button>
-  </span>
-`;
-
-const botaoOutro = `
-  <button type="button"
-    class="btn btn-small"
-    onclick="adicionarNovoSelect(this, '${col.key}')">+ Outro</button>
-`;
-
-return `
-<td>
-  <div class="multi-select-group">
-    <div class="avaria-selects">
-      ${selectInicial}
-    </div>
-    ${botaoOutro}
-  </div>
-</td>`;
-
-    }
     if (col.select) {
       return `<td><select data-k="${col.key}">${optionList(col.select(), col.selectPlaceholder)}</select></td>`;
     }
@@ -640,91 +599,9 @@ applyCodigoProdutoToLastRow(type);
 
 function removeRow(btn) { btn.closest('tr')?.remove(); }
 
-/* ==========================================================
-   RRA: MÚLTIPLAS AVARIAS
-   ========================================================== */
-
-function adicionarNovoSelect(btn, key) {
-  const group = btn.parentElement;
-
-  const wrapper = document.createElement('span');
-  wrapper.className = 'avaria-item';
-
-  const novoSelect = document.createElement('select');
-  novoSelect.className = 'multi-select';
-  novoSelect.setAttribute('data-k', key);
-  novoSelect.onchange = () => atualizarOutrosSelects(novoSelect, key);
-
-  const selecionados = [...group.querySelectorAll('.multi-select')]
-    .map(s => s.value)
-    .filter(v => v);
-
-  const options = BASE_RRA.filter(opt => !selecionados.includes(opt));
-
-  novoSelect.innerHTML =
-    '<option value="">Selecione...</option>' +
-    options.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('');
-
-  const btnRemover = document.createElement('button');
-  btnRemover.type = 'button';
-  btnRemover.className = 'btn-remove-avaria';
-  btnRemover.textContent = '✕';
-  btnRemover.onclick = () => removerSelect(btnRemover, key);
-
-  wrapper.appendChild(novoSelect);
-  wrapper.appendChild(btnRemover);
-
-  const selectsContainer = group.querySelector('.avaria-selects');
-  selectsContainer.appendChild(wrapper);
-}
-
-function removerSelect(botao, key) {
-  const item = botao.closest('.avaria-item');
-  const group = item.parentElement;
-
-  // Mantém ao menos 1 seletor de avaria
-  if (group.querySelectorAll('.avaria-item').length <= 1) return;
-
-  item.remove();
-
-  // revalida opções restantes
-  group.querySelectorAll('.multi-select')
-    .forEach(sel => atualizarOutrosSelects(sel, key));
-}
-
-
-// Atualiza opções para evitar avarias repetidas no mesmo item
-function atualizarOutrosSelects(_) {
- const group = _.closest('.multi-select-group');
-
-  // 1️⃣ Pega TODOS os valores selecionados no grupo
-  const selecionados = [...group.querySelectorAll('.multi-select')]
-    .map(sel => sel.value)
-    .filter(v => v);
-
-  // 2️⃣ Reprocessa TODOS os selects (inclusive o alterado)
-  group.querySelectorAll('.multi-select').forEach(select => {
-    const valorAtual = select.value;
-
-    const options = BASE_RRA.filter(
-      opt => !selecionados.includes(opt) || opt === valorAtual
-    );
-
-    select.innerHTML =
-      '<option value="">Selecione...</option>' +
-      options.map(opt => `
-        <option value="${escapeHtml(opt)}"
-          ${opt === valorAtual ? 'selected' : ''}>
-          ${escapeHtml(opt)}
-        </option>
-      `).join('');
-  });
-}
-``
-
-/* ==========================================================
+/* ================================
    LEITURA DE DADOS
-   ========================================================== */
+================================ */
 
 function readCommon() {
   const cliente = document.getElementById('cliente').value;
@@ -745,37 +622,25 @@ function readRows(type) {
   const keys = ROW_SCHEMA[type].map(c => c.key);
   return [...document.querySelectorAll(`#table${type} tbody tr`)]
     .map(tr => {
-      const rowData = {};
-      keys.forEach(k => {
-        const col = ROW_SCHEMA[type].find(c => c.key === k);
-        if (col && col.multiSelect) {
-          // Para multiSelect, pega todos os selects e concatena com " e "
-          const values = [...tr.querySelectorAll(`[data-k="${k}"].multi-select`)].map(s => s.value).filter(v => v);
-          rowData[k] = values.join(' e ');
-        } else {
-          rowData[k] = tr.querySelector(`[data-k="${k}"]`)?.value?.trim() || '';
-        }
-      });
-      return rowData;
+      const get = k => tr.querySelector(`[data-k="${k}"]`)?.value?.trim() || '';
+      return Object.fromEntries(keys.map(k => [k, get(k)]));
     })
     .filter(r => Object.values(r).some(v => v));
 }
 
-/* ==========================================================
-   validatePayload sem if/else redundante
-   ========================================================== */
+/* ================================
+   CORREÇÃO 7: validatePayload sem if/else redundante
+================================ */
 
 function validatePayload(type, payload) {
   const missing = [];
-  const c = payload.cabecalho || {};
-
-  if (!c.dataHoje)      missing.push('Data do reporte');
-  if (!c.nfNumero)      missing.push('Nº da NF');
-  if (!c.tipoOperacao)  missing.push('Tipo de operação');
-  if (!c.emitente)      missing.push('Emitente');
-  if (!c.destinatario)  missing.push('Destinatário');
-  if (!c.cliente)       missing.push('Cliente para reporte');
-  if (!c.agendamento)   missing.push('Agendamento');
+  if (!payload.dataHoje)      missing.push('Data do reporte');
+  if (!payload.nfNumero)      missing.push('Nº da NF');
+  if (!payload.tipoOperacao)  missing.push('Tipo de operação');
+  if (!payload.emitente)      missing.push('Emitente');
+  if (!payload.destinatario)  missing.push('Destinatário');
+  if (!payload.cliente)       missing.push('Cliente para reporte');
+  if (!payload.agendamento)   missing.push('Agendamento');
   if (!payload.conferente)    missing.push(`Conferente (${type})`);
   if (!payload.itens?.length) missing.push(`Ao menos 1 item no ${type}`);
 
@@ -783,19 +648,18 @@ function validatePayload(type, payload) {
     ? ['produto', 'lote', 'quantidade', 'descricao']
     : ['produto', 'loteNF', 'qtdNF', 'loteFisico', 'qtdFisico', 'descricao'];
 
-  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k]))) {
+  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k])))
     missing.push('Campos obrigatórios em todos os itens (produto/lotes/qtd/descrição)');
-  }
 
   return missing;
 }
 
-/* ==========================================================
-   submitForm — readRows chamado uma única vez
-   ========================================================== */
+/* ================================
+   CORREÇÃO 4: submitForm — readRows chamado uma única vez
+================================ */
 
 async function submitForm() {
-  setStatus('', '');
+  clearStatus();
 
   const common    = readCommon();
   const idSuffix  = currentType === 'RRA' ? '' : '_RNC';
@@ -803,7 +667,7 @@ async function submitForm() {
   const fotosInput = document.getElementById(`anexoFotos${idSuffix}`);
   const conferente = document.getElementById(`conferente${currentType}`).value.trim();
 
-  // Lê os itens uma única vez e reutiliza no envio
+  // Lê itens UMA única vez e reutiliza
   const itens = readRows(currentType);
 
   if (!itens.length || !conferente || !pdfInput?.files?.length || !fotosInput?.files?.length) {
@@ -888,9 +752,9 @@ const payload = {
   }
 }
 
-/* ==========================================================
-   RESET
-   ========================================================== */
+/* ================================
+   RESETAR
+================================ */
 
 function resetAll() {
   ['nfNumero','tipoOperacao','emitente','destinatario','cliente',
@@ -905,12 +769,12 @@ function resetAll() {
   document.querySelector('#tableRNC tbody').innerHTML = '';
   addRow('RRA');
   addRow('RNC');
-  setStatus('', '');
+  clearStatus();
 }
 
-/* ==========================================================
-   MENU E TEMA
-   ========================================================== */
+/* ================================
+   MENU / TEMA
+================================ */
 
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -946,7 +810,7 @@ function initMenu() {
 }
 
 /* ================================
-   getListMeta() elimina todos os if/else repetidos
+   CORREÇÃO 3: getListMeta() elimina todos os if/else repetidos
    nas funções de admin (addItem, updateItem, removeItem, renderItems)
 ================================ */
 
@@ -1014,7 +878,7 @@ async function removeItem(type, index) {
 }
 
 /* ================================
-   Clientes & Emails
+   CORREÇÃO 5: Clientes & Emails
    Usa dataset em vez de onclick inline com dados do usuário
 ================================ */
 
@@ -1115,7 +979,7 @@ function removeEmail(clientName, index) {
 
 /* ================================
    ADMIN — LOGIN / PAINEL
-   compara hash SHA-256, nunca texto puro
+   CORREÇÃO 1: compara hash SHA-256, nunca texto puro
 ================================ */
 
 function initAdmin() {
@@ -1201,38 +1065,26 @@ function updateClientOptions() {
   if (current && emailsClientes[current]) select.value = current;
 }
 
-/* ==========================================================
+/* ================================
    INICIALIZAÇÃO
-   ========================================================== */
+================================ */
 
 
 
 
 
 
-function init() {
+(async function init() {
   document.getElementById('dataHoje').value = isoToday();
 
-  // Prepara listas do datalist (emitente/destinatário)
-  carregarClientes();
-
-  // Prepara tabelas
   addRow('RRA');
   addRow('RNC');
 
-  // UI
   initMenu();
   initAdmin();
   updateOperationOptions();
   updateClientOptions();
-  updateDestinatarios();
-
-  // Índice para autocomplete de produtos
-  indexarProdutos();
-}
-
-document.addEventListener('DOMContentLoaded', init);
-
+})();
 
 
 
@@ -1260,8 +1112,9 @@ function indexarProdutos() {
   }
 
   PRODUTOS_DESC_INDEX = index;
+  PRODUTOS_CARREGADOS = true;
 
-  console.log(` Produtos indexados: ${index.length}`);
+  console.log(`✅ Produtos indexados: ${index.length}`);
 }
 
 function debounce(fn, delay = 250) {
@@ -1280,7 +1133,7 @@ function posicionarAutocomplete(box, input) {
 
   const listHeight = box.offsetHeight || 360;
 
-  //  abre para cima, colada ao input (no DOCUMENTO)
+  // ✅ abre para cima, colada ao input (no DOCUMENTO)
   box.style.top  = `${rect.top + scrollY - listHeight - 4}px`;
   box.style.left = `${rect.left + scrollX}px`;
   box.style.width = `${rect.width}px`;
@@ -1338,7 +1191,7 @@ function attachProdutoAutocomplete(inputProduto, inputCodigo) {
       </div>`
     ).join('');
 
-    //  posiciona UMA ÚNICA VEZ
+    // ✅ posiciona UMA ÚNICA VEZ
     if (!posicionada) {
       posicionarAutocomplete(box, inputProduto);
       posicionada = true;
@@ -1370,28 +1223,4 @@ function attachProdutoAutocomplete(inputProduto, inputCodigo) {
     setTimeout(removeBox, 150);
   });
 }
-
-
-  // Exposição mínima para handlers inline existentes (HTML e templates gerados)
-  Object.assign(window, {
-    carregarClientes: carregarClientes,
-    updateDestinatarios: updateDestinatarios,
-    switchForm: switchForm,
-    addRow: addRow,
-    submitForm: submitForm,
-    resetAll: resetAll,
-    closeAdminLogin: closeAdminLogin,
-    adicionarNovoSelect: adicionarNovoSelect,
-    removerSelect: removerSelect,
-    atualizarOutrosSelects: atualizarOutrosSelects,
-    removeRow: removeRow,
-    addClient: addClient,
-    removeClientByBtn: removeClientByBtn,
-    addEmail: addEmail,
-    updateEmail: updateEmail,
-    removeEmail: removeEmail,
-    addItem: addItem,
-    updateItem: updateItem,
-    removeItem: removeItem
-  });
-})();
+indexarProdutos();
