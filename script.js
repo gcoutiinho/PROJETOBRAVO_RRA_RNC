@@ -1,14 +1,24 @@
-/**********************
- * CONFIG - velho
- **********************/
+/* ==========================================================
+   Portal RRA / RNC — Script
+   Melhorias aplicadas (versão segura):
+   - Init via DOMContentLoaded (remove dependência de onload)
+   - validatePayload corrigido para o payload atual
+   - Organização: escopo isolado (IIFE) + export mínimo para handlers
+   ========================================================== */
 
-let PRODUTOS_CARREGADOS = false
+(function () {
+  'use strict';
+
+/* ==========================================================
+   CONFIGURAÇÕES GERAIS
+   - URLs do Power Automate
+   - Listas base (fallback do localStorage)
+   ========================================================== */
+
 let PRODUTOS_DESC_INDEX = [];
 
 const CONFIG = {
   // Cole aqui as URLs geradas pelo gatilho "When an HTTP request is received".
-  urlRRA: "",
-  urlRNC: "",
   urlUnified: "https://default06219a4aa83544d5afaf3926343bfb.89.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9fe290593668452d8daf2db5458f1ff4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2hb_PXhj1NkGLaT-KkFhPcsFZZwzqS1pAMrMqJaR9lA",
 
   // Timeout de requisição
@@ -37,7 +47,7 @@ const CONFIG = {
     "VENDA"
   ],
 
-  // CORREÇÃO 1: Senha nunca fica em texto puro no código.
+  // Senha nunca fica em texto puro no código.
   // Use um hash SHA-256 da senha real. Para gerar o hash:
   //   1. Abra o console do navegador (F12)
   //   2. Cole e execute:
@@ -349,9 +359,9 @@ let tiposOperacao  = loadFromStorage('tiposOperacao',  CONFIG.tiposOperacao);
 
 let isAdminLogged = false;
 
-/* ================================
-   UTILITÁRIOS GERAIS
-================================ */
+/* ==========================================================
+   UTILITÁRIOS
+   ========================================================== */
 
 function isoToday() {
   const d = new Date();
@@ -380,8 +390,9 @@ function escapeHtml(str) {
     .replaceAll('"',  '&quot;')
     .replaceAll("'",  '&#039;');
 }
-
-// CORREÇÃO 1: hash SHA-256 via Web Crypto API (sem bibliotecas externas)
+/**
+ * Gera hash SHA-256 via Web Crypto API (usado no login Admin)
+ */
 async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -414,7 +425,7 @@ function fileToBase64(file) {
 }
 
 /* ================================
-   CORREÇÃO 6: Modal customizado
+   Modal customizado
    Substitui prompt() / alert() / confirm() nativos
    que bloqueiam a UI e não podem ser estilizados
 ================================ */
@@ -456,9 +467,9 @@ function showModal({ title, message = '', input = false, placeholder = '', confi
   });
 }
 
-/* ================================
-   STATUS
-================================ */
+/* ==========================================================
+   STATUS / FEEDBACK
+   ========================================================== */
 
 function setStatus(kind, message) {
   const el = document.getElementById('status');
@@ -467,11 +478,9 @@ function setStatus(kind, message) {
   if (kind) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function clearStatus() { setStatus('', ''); }
-
-/* ================================
-   FORMULÁRIO
-================================ */
+/* ==========================================================
+   FORMULÁRIO (RRA / RNC)
+   ========================================================== */
 
 function updateDestinatarios() {
   const cliente = document.getElementById('cliente').value;
@@ -494,11 +503,11 @@ function switchForm(type) {
   document.getElementById('form-RRA').style.display = type === 'RRA' ? 'block' : 'none';
   document.getElementById('form-RNC').style.display = type === 'RNC' ? 'block' : 'none';
 
-  // ✅ RESET DOS ITENS (ESSENCIAL)
+  // Reinicia as tabelas ao alternar entre RRA e RNC
   resetItensPorTipo('RRA');
   resetItensPorTipo('RNC');
 
-  clearStatus();
+  setStatus('', '');
 }
 
 function optionList(options, placeholder = 'Selecione...') {
@@ -507,7 +516,7 @@ function optionList(options, placeholder = 'Selecione...') {
 }
 
 /* ================================
-   CORREÇÃO 2: addRow sem duplicação
+   addRow sem duplicação
    Schema centralizado elimina o if/else RRA vs RNC
 ================================ */
 
@@ -558,10 +567,10 @@ function bindCodigoProdutoRow(tr) {
 
   if (!inputProduto) return;
 
-  // ✅ autocomplete por descrição
+  //  autocomplete por descrição
   attachProdutoAutocomplete(inputProduto, inputCodigo);
 
-  // ✅ lookup por código (se existir)
+  //  lookup por código (se existir)
   if (inputCodigo) {
     inputCodigo.addEventListener('blur', () => {
       const codigo = inputCodigo.value.trim();
@@ -583,7 +592,7 @@ function addRow(type) {
 
   const cells = ROW_SCHEMA[type].map(col => {
     if (col.multiSelect) {
-      // Renderiza múltiplos selects para permitir múltiplas avarias
+      // Permite selecionar múltiplas avarias no mesmo item (RRA)
       const options = col.multiSelect();
       const selectInicial = `
   <span class="avaria-item">
@@ -631,9 +640,9 @@ applyCodigoProdutoToLastRow(type);
 
 function removeRow(btn) { btn.closest('tr')?.remove(); }
 
-/* ================================
-   NOVA AVARIA
-================================ */
+/* ==========================================================
+   RRA: MÚLTIPLAS AVARIAS
+   ========================================================== */
 
 function adicionarNovoSelect(btn, key) {
   const group = btn.parentElement;
@@ -673,7 +682,7 @@ function removerSelect(botao, key) {
   const item = botao.closest('.avaria-item');
   const group = item.parentElement;
 
-  // mantém ao menos 1 select
+  // Mantém ao menos 1 seletor de avaria
   if (group.querySelectorAll('.avaria-item').length <= 1) return;
 
   item.remove();
@@ -684,7 +693,7 @@ function removerSelect(botao, key) {
 }
 
 
-// Atualiza as opções dos outros selects quando um é alterado
+// Atualiza opções para evitar avarias repetidas no mesmo item
 function atualizarOutrosSelects(_) {
  const group = _.closest('.multi-select-group');
 
@@ -713,9 +722,9 @@ function atualizarOutrosSelects(_) {
 }
 ``
 
-/* ================================
+/* ==========================================================
    LEITURA DE DADOS
-================================ */
+   ========================================================== */
 
 function readCommon() {
   const cliente = document.getElementById('cliente').value;
@@ -752,19 +761,21 @@ function readRows(type) {
     .filter(r => Object.values(r).some(v => v));
 }
 
-/* ================================
-   CORREÇÃO 7: validatePayload sem if/else redundante
-================================ */
+/* ==========================================================
+   validatePayload sem if/else redundante
+   ========================================================== */
 
 function validatePayload(type, payload) {
   const missing = [];
-  if (!payload.dataHoje)      missing.push('Data do reporte');
-  if (!payload.nfNumero)      missing.push('Nº da NF');
-  if (!payload.tipoOperacao)  missing.push('Tipo de operação');
-  if (!payload.emitente)      missing.push('Emitente');
-  if (!payload.destinatario)  missing.push('Destinatário');
-  if (!payload.cliente)       missing.push('Cliente para reporte');
-  if (!payload.agendamento)   missing.push('Agendamento');
+  const c = payload.cabecalho || {};
+
+  if (!c.dataHoje)      missing.push('Data do reporte');
+  if (!c.nfNumero)      missing.push('Nº da NF');
+  if (!c.tipoOperacao)  missing.push('Tipo de operação');
+  if (!c.emitente)      missing.push('Emitente');
+  if (!c.destinatario)  missing.push('Destinatário');
+  if (!c.cliente)       missing.push('Cliente para reporte');
+  if (!c.agendamento)   missing.push('Agendamento');
   if (!payload.conferente)    missing.push(`Conferente (${type})`);
   if (!payload.itens?.length) missing.push(`Ao menos 1 item no ${type}`);
 
@@ -772,18 +783,19 @@ function validatePayload(type, payload) {
     ? ['produto', 'lote', 'quantidade', 'descricao']
     : ['produto', 'loteNF', 'qtdNF', 'loteFisico', 'qtdFisico', 'descricao'];
 
-  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k])))
+  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k]))) {
     missing.push('Campos obrigatórios em todos os itens (produto/lotes/qtd/descrição)');
+  }
 
   return missing;
 }
 
-/* ================================
-   CORREÇÃO 4: submitForm — readRows chamado uma única vez
-================================ */
+/* ==========================================================
+   submitForm — readRows chamado uma única vez
+   ========================================================== */
 
 async function submitForm() {
-  clearStatus();
+  setStatus('', '');
 
   const common    = readCommon();
   const idSuffix  = currentType === 'RRA' ? '' : '_RNC';
@@ -791,7 +803,7 @@ async function submitForm() {
   const fotosInput = document.getElementById(`anexoFotos${idSuffix}`);
   const conferente = document.getElementById(`conferente${currentType}`).value.trim();
 
-  // Lê itens UMA única vez e reutiliza
+  // Lê os itens uma única vez e reutiliza no envio
   const itens = readRows(currentType);
 
   if (!itens.length || !conferente || !pdfInput?.files?.length || !fotosInput?.files?.length) {
@@ -876,9 +888,9 @@ const payload = {
   }
 }
 
-/* ================================
-   RESETAR
-================================ */
+/* ==========================================================
+   RESET
+   ========================================================== */
 
 function resetAll() {
   ['nfNumero','tipoOperacao','emitente','destinatario','cliente',
@@ -893,12 +905,12 @@ function resetAll() {
   document.querySelector('#tableRNC tbody').innerHTML = '';
   addRow('RRA');
   addRow('RNC');
-  clearStatus();
+  setStatus('', '');
 }
 
-/* ================================
-   MENU / TEMA
-================================ */
+/* ==========================================================
+   MENU E TEMA
+   ========================================================== */
 
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -934,7 +946,7 @@ function initMenu() {
 }
 
 /* ================================
-   CORREÇÃO 3: getListMeta() elimina todos os if/else repetidos
+   getListMeta() elimina todos os if/else repetidos
    nas funções de admin (addItem, updateItem, removeItem, renderItems)
 ================================ */
 
@@ -1002,7 +1014,7 @@ async function removeItem(type, index) {
 }
 
 /* ================================
-   CORREÇÃO 5: Clientes & Emails
+   Clientes & Emails
    Usa dataset em vez de onclick inline com dados do usuário
 ================================ */
 
@@ -1103,7 +1115,7 @@ function removeEmail(clientName, index) {
 
 /* ================================
    ADMIN — LOGIN / PAINEL
-   CORREÇÃO 1: compara hash SHA-256, nunca texto puro
+   compara hash SHA-256, nunca texto puro
 ================================ */
 
 function initAdmin() {
@@ -1189,26 +1201,38 @@ function updateClientOptions() {
   if (current && emailsClientes[current]) select.value = current;
 }
 
-/* ================================
+/* ==========================================================
    INICIALIZAÇÃO
-================================ */
+   ========================================================== */
 
 
 
 
 
 
-(async function init() {
+function init() {
   document.getElementById('dataHoje').value = isoToday();
 
+  // Prepara listas do datalist (emitente/destinatário)
+  carregarClientes();
+
+  // Prepara tabelas
   addRow('RRA');
   addRow('RNC');
 
+  // UI
   initMenu();
   initAdmin();
   updateOperationOptions();
   updateClientOptions();
-})();
+  updateDestinatarios();
+
+  // Índice para autocomplete de produtos
+  indexarProdutos();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
 
 
 
@@ -1236,9 +1260,8 @@ function indexarProdutos() {
   }
 
   PRODUTOS_DESC_INDEX = index;
-  PRODUTOS_CARREGADOS = true;
 
-  console.log(`✅ Produtos indexados: ${index.length}`);
+  console.log(` Produtos indexados: ${index.length}`);
 }
 
 function debounce(fn, delay = 250) {
@@ -1257,7 +1280,7 @@ function posicionarAutocomplete(box, input) {
 
   const listHeight = box.offsetHeight || 360;
 
-  // ✅ abre para cima, colada ao input (no DOCUMENTO)
+  //  abre para cima, colada ao input (no DOCUMENTO)
   box.style.top  = `${rect.top + scrollY - listHeight - 4}px`;
   box.style.left = `${rect.left + scrollX}px`;
   box.style.width = `${rect.width}px`;
@@ -1315,7 +1338,7 @@ function attachProdutoAutocomplete(inputProduto, inputCodigo) {
       </div>`
     ).join('');
 
-    // ✅ posiciona UMA ÚNICA VEZ
+    //  posiciona UMA ÚNICA VEZ
     if (!posicionada) {
       posicionarAutocomplete(box, inputProduto);
       posicionada = true;
@@ -1347,4 +1370,28 @@ function attachProdutoAutocomplete(inputProduto, inputCodigo) {
     setTimeout(removeBox, 150);
   });
 }
-indexarProdutos();
+
+
+  // Exposição mínima para handlers inline existentes (HTML e templates gerados)
+  Object.assign(window, {
+    carregarClientes: carregarClientes,
+    updateDestinatarios: updateDestinatarios,
+    switchForm: switchForm,
+    addRow: addRow,
+    submitForm: submitForm,
+    resetAll: resetAll,
+    closeAdminLogin: closeAdminLogin,
+    adicionarNovoSelect: adicionarNovoSelect,
+    removerSelect: removerSelect,
+    atualizarOutrosSelects: atualizarOutrosSelects,
+    removeRow: removeRow,
+    addClient: addClient,
+    removeClientByBtn: removeClientByBtn,
+    addEmail: addEmail,
+    updateEmail: updateEmail,
+    removeEmail: removeEmail,
+    addItem: addItem,
+    updateItem: updateItem,
+    removeItem: removeItem
+  });
+})();

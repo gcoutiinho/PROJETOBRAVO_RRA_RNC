@@ -1,3 +1,9 @@
+/* ==========================================================
+   Portal RRA / RNC — Estilos
+   - Tema escuro por padrão + variáveis CSS
+   - Componentes: formulário, tabelas, menu, admin e modal
+   ========================================================== */
+
 :root {
   --brand:#FF6B00;
   --brand-dark:#E55A00;
@@ -21,7 +27,7 @@
 
 
 .autocomplete-box {
-  position: absolute;   /* ✅ ESSENCIAL */
+  position: absolute;   /*  ESSENCIAL */
   background: #111;
   border: 1px solid #333;
   z-index: 10000;
@@ -44,7 +50,7 @@
 .autocomplete-item:hover {
   background: #333;
 }
-/* Skip link para acessibilidade */
+/* Acessibilidade: link para pular direto ao conteúdo */
 .skip-link {
   position: absolute;
   top: -40px;
@@ -92,7 +98,7 @@ textarea::placeholder {
   color: #b0b0b0;
 }
 
-/* Tabela em modo escuro */
+/* Tabela (tema escuro por padrão) */
 .table th,
 .table td {
   background: #23272b;
@@ -112,7 +118,7 @@ textarea::placeholder {
 .table td input::placeholder {
   color: #888;
 }
-/* Botões em modo escuro */
+/* Botões (tema escuro por padrão) */
 .btn.secondary {
   background: #2d3238;
   color: #4da6ff;
@@ -174,7 +180,7 @@ textarea::placeholder {
       border:1px solid #444;
     }
 
-/* Estados de foco para acessibilidade */
+/* Acessibilidade: estados de foco visíveis */
 input:focus,
 select:focus,
 textarea:focus,
@@ -190,7 +196,7 @@ button:focus,
   outline-offset: 2px;
 }
 
-/* Melhorar acessibilidade das tabelas */
+/* Tabela: legibilidade e espaçamento */
 .table th,
 .table td {
   border: 1px solid var(--border);
@@ -200,7 +206,7 @@ button:focus,
   white-space: nowrap;
 }
 
-/* Garantir que botões de ação sejam acessíveis */
+/* Botões: interação e foco */
 .btn {
   cursor: pointer;
   transition: all 0.2s;
@@ -211,7 +217,7 @@ button:focus,
   outline-offset: 2px;
 }
 
-/* Melhorar contraste dos hints */
+/* Textos auxiliares (hints) */
 .hint {
   color: var(--muted);
   opacity: 0.9;
@@ -335,7 +341,7 @@ button:focus,
       header .wrap{flex-direction:column;align-items:flex-start}
     }
 
-/* Menu hambúrguer e toggle de tema */
+/* Menu (hambúrguer) e alternância de tema */
 .menu-container {
   position: absolute;
   top: 18px;
@@ -548,7 +554,9 @@ button:focus,
   color: #fff;
 }
 
-/* ================= ADMIN PANEL ================= */
+/* ==========================================================
+   PAINEL ADMINISTRATIVO
+   ========================================================== */
 .admin-panel {
   margin: 20px auto;
   max-width: 1200px;
@@ -729,7 +737,7 @@ button:focus,
   gap: 5px;
 }
 
-/* Modal */
+/* Modal (overlay + conteúdo) */
 .modal {
   position: fixed;
   top: 0;
@@ -766,7 +774,7 @@ button:focus,
   margin-top: 20px;
 }
 
-/* Tema claro para admin */
+/* Admin: ajustes no tema claro */
 [data-theme="light"] .admin-tab {
   background: #f8f9fa;
   border-color: #dee2e6;
@@ -792,9 +800,9 @@ button:focus,
   border-color: #ced4da;
   color: #495057;
 }
-/* ================================
-   Modal customizado (substitui prompt/alert/confirm nativos)
-================================ */
+/* ==========================================================
+   MODAL CUSTOMIZADO (substitui prompt/alert/confirm)
+   ========================================================== */
 .modal-field {
   width: 100%;
   margin-bottom: 16px;
@@ -812,7 +820,9 @@ button:focus,
 
 
 
-/* ===== AJUSTE DE TAMANHO DOS CAMPOS DA TABELA ===== */
+/* ==========================================================
+   TABELA: AJUSTES DE LARGURA DOS CAMPOS
+   ========================================================== */
 
 /* Código – bem menor */
 .table input[data-k="codigo"] {
