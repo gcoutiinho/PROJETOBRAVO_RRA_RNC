@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Portal RRA / RNC — Bravo Serviços Logísticos</title>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+
+<body onload="carregarClientes()">
+
+<!-- Skip link para acessibilidade -->
+<a href="#main-content" class="skip-link">Pular para conteúdo principal</a>
+
+<header>
+  <div class="wrap">
+    <div class="logo-area">
+      <div class="logo"></div>
+      <div class="brand-text">
+        <h1>Bravo Serviços Logísticos</h1>
+        <small>Portal de Reporte — RRA / RNC</small>
+      </div>
+    </div>
+    <div class="pill">Bravo • PCE</div>
+  </div>
+  <div class="menu-container">
+    <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <div class="menu-dropdown" id="menuDropdown">
+      <div class="menu-item">
+        <label for="themeToggle" class="menu-label">Tema</label>
+        <div class="theme-toggle">
+          <input type="checkbox" id="themeToggle" />
+          <label for="themeToggle" class="toggle-slider"></label>
+          <span class="theme-text">Escuro</span>
+        </div>
+      </div>
+      <div class="menu-item">
+        <button class="menu-btn" id="adminBtn" type="button">Admin</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main-content">
+
+  <div class="card">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button id="tab-rra" class="tab active" onclick="switchForm('RRA')" aria-pressed="true" role="tab">RRA (Avaria)</button>
+      <button id="tab-rnc" class="tab" onclick="switchForm('RNC')" aria-pressed="false" role="tab">RNC (Não Conformidade)</button>
+    </div>
+
+    <div class="body">
+
+      <!-- DADOS DA NF -->
+      <h3 class="section-title">Dados da NF</h3>
+
+      <div class="grid">
+        <div class="field sm">
+          <label for="dataHoje">Data do reporte</label>
+          <input id="dataHoje" type="date" readonly aria-label="Data do reporte" aria-describedby="hint-data" />
+          <span class="hint" id="hint-data">Preenchido automaticamente</span>
+        </div>
+
+        <div class="field sm">
+          <label for="nfNumero">Nº da NF</label>
+          <input id="nfNumero" placeholder="Ex.: 7805" inputmode="numeric" pattern="[0-9]+" aria-label="Número da Nota Fiscal" oninput="this.value=this.value.replace(/[^0-9]/g,'')" aria-describedby="hint-nf" />
+          <span class="hint" id="hint-nf">Apenas números</span>
+        </div>
+
+        <div class="field md">
+          <label for="tipoOperacao">Tipo de operação</label>
+          <select id="tipoOperacao" aria-label="Tipo de operação da NF">
+            <option value="">Selecione...</option>
+          </select>
+          <span class="hint">Escolha uma opção</span>
+        </div>
+
+        
+<div class="field md">
+  <label for="emitente">Emitente da NF</label>
+  <input list="produtos_emi" id="emitente" placeholder="Nome do emitente">
+  <datalist id="produtos_emi"></datalist>
+</div>
+
+<div class="field md">
+  <label for="destinatario">Destinatário da NF</label>
+  <input list="produtos_des" id="destinatario" placeholder="Nome do destinatário">
+  <datalist id="produtos_des"></datalist>
+</div>
+
+
+        <div class="field sm">
+          <label for="agendamento">Agendamento</label>
+          <input id="agendamento" placeholder="Ex.: 2500617" inputmode="numeric" pattern="[0-9]+" aria-label="Número do agendamento" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+          <span class="hint">Digite o número do agendamento</span>
+        </div>
+
+        <div class="field sm">
+          <label for="cliente">Cliente para reporte</label>
+          <select id="cliente" aria-label="Cliente para envio do email" onchange="updateDestinatarios()" aria-describedby="hint-cliente">
+            <option value="">Selecione...</option>
+            <option value="Citrosuco">Citrosuco</option>
+            <option value="FMC">FMC</option>
+            <option value="Helm">Helm</option>
+            <option value="Orígeo">Orígeo</option>
+            <option value="Syngenta">Syngenta</option>
+            <option value="Transporte">Transporte</option>
+          </select>
+          <span class="hint" id="hint-cliente">Escolha o cliente para determinar os destinatários do email</span>
+        </div>
+
+        <div class="field xl">
+          <label for="destinatariosEmail">Destinatários do email</label>
+          <input id="destinatariosEmail" readonly placeholder="Emails serão exibidos aqui ao selecionar o cliente" aria-label="Destinatários do email" aria-describedby="hint-emails" />
+          <span class="hint" id="hint-emails">Lista de emails que receberão o relatório</span>
+        </div>
+
+        <div class="field xl">
+          <label for="observacoes">Observações (opcional)</label>
+          <textarea id="observacoes" placeholder="Informações adicionais"></textarea>
+        </div>
+      </div>
+
+      <!-- ================= RRA ================= -->
+      <div id="form-RRA">
+
+        <h3 class="section-title">Itens do RRA</h3>
+
+        <div class="table-container">
+          <table class="table" id="tableRRA">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Produto</th>
+                <th>Lote</th>
+                <th>Quantidade</th>
+                <th>Unitizador</th>
+                <th>Movimentação SAP</th>
+                <th>Tipo de avaria</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="row-actions">
+          <button class="btn secondary" onclick="addRow('RRA')">+ Adicionar item</button>
+        </div>
+
+        <h3 class="section-title">Conferente</h3>
+        <input id="conferenteRRA" placeholder="Nome do conferente" aria-label="Nome do conferente RRA" />
+
+        <!-- ANEXOS -->
+        <h3 class="section-title">Anexos</h3>
+        
+        <div class="grid">
+          <div class="field md">
+            <label for="anexoPDF">Anexo PDF (RRA/RNC escaneada)</label>
+            <input type="file" id="anexoPDF" accept=".pdf" aria-label="Anexo PDF da RRA/RNC" />
+            <span class="hint">Arquivo PDF da folha física</span>
+          </div>
+
+          <div class="field md">
+            <label for="anexoFotos">Anexo Fotos (avaria/não conformidade)</label>
+            <input type="file" id="anexoFotos" accept="image/*" multiple aria-label="Fotos da avaria" />
+            <span class="hint">Selecione uma ou mais fotos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= RNC ================= -->
+      <div id="form-RNC" style="display:none">
+
+        <h3 class="section-title">Itens da RNC</h3>
+
+        <div class="table-container">
+          <table class="table" id="tableRNC">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Produto</th>
+                <th>Lote NF</th>
+                <th>Qtd NF</th>
+                <th>Lote físico</th>
+                <th>Qtd físico</th>
+                <th>Tipo de não conformidade</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="row-actions">
+          <button class="btn secondary" onclick="addRow('RNC')">+ Adicionar item</button>
+        </div>
+
+        <h3 class="section-title">Conferente</h3>
+        <input id="conferenteRNC" placeholder="Nome do conferente" aria-label="Nome do conferente RNC" />
+
+        <!-- ANEXOS -->
+        <h3 class="section-title">Anexos</h3>
+        
+        <div class="grid">
+          <div class="field md">
+            <label for="anexoPDF_RNC">Anexo PDF (RRA/RNC escaneada)</label>
+            <input type="file" id="anexoPDF_RNC" accept=".pdf" aria-label="Anexo PDF da RRA/RNC" />
+            <span class="hint">Arquivo PDF da folha física</span>
+          </div>
+
+          <div class="field md">
+            <label for="anexoFotos_RNC">Anexo Fotos (avaria/não conformidade)</label>
+            <input type="file" id="anexoFotos_RNC" accept="image/*" multiple aria-label="Fotos da avaria" />
+            <span class="hint">Selecione uma ou mais fotos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AÇÕES -->
+
+      <div class="row-actions">
+        <button id="btnEnviar" class="btn" onclick="submitForm()">Enviar</button>
+        <button class="btn secondary" onclick="resetAll()" type="button">Limpar</button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+    </div>
+  </div>
+</main>
+
+<!-- Interface de Administração -->
+<div id="adminPanel" class="admin-panel" style="display:none;">
+  <div class="card">
+    <div class="admin-header">
+      <h2>Administração do Sistema</h2>
+      <button class="btn secondary" id="logoutBtn">Sair</button>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="clients">Clientes & Emails</button>
+      <button class="admin-tab" data-tab="rra">Tipos de Avaria (RRA)</button>
+      <button class="admin-tab" data-tab="rnc">Tipos de Não Conformidade (RNC)</button>
+      <button class="admin-tab" data-tab="operations">Tipos de Operação</button>
+    </div>
+
+    <div class="admin-content">
+      <!-- Clientes & Emails -->
+      <div class="admin-section active" id="clients-section">
+        <h3>Gerenciar Clientes e Destinatários</h3>
+        <div class="admin-clients">
+          <div class="client-list" id="clientList"></div>
+          <button class="btn secondary" id="addClientBtn">+ Adicionar Cliente</button>
+        </div>
+      </div>
+
+      <!-- Tipos de Avaria (RRA) -->
+      <div class="admin-section" id="rra-section">
+        <h3>Gerenciar Tipos de Avaria (RRA)</h3>
+        <div class="admin-items">
+          <div class="item-list" id="rraList"></div>
+          <button class="btn secondary" id="addRraBtn">+ Adicionar Tipo</button>
+        </div>
+      </div>
+
+      <!-- Tipos de Não Conformidade (RNC) -->
+      <div class="admin-section" id="rnc-section">
+        <h3>Gerenciar Tipos de Não Conformidade (RNC)</h3>
+        <div class="admin-items">
+          <div class="item-list" id="rncList"></div>
+          <button class="btn secondary" id="addRncBtn">+ Adicionar Tipo</button>
+        </div>
+      </div>
+
+      <!-- Tipos de Operação -->
+      <div class="admin-section" id="operations-section">
+        <h3>Gerenciar Tipos de Operação</h3>
+        <div class="admin-items">
+          <div class="item-list" id="operationsList"></div>
+          <button class="btn secondary" id="addOperationBtn">+ Adicionar Tipo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Login Admin -->
+<div id="adminLoginModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Login Administrador</h3>
+    <form id="adminLoginForm">
+      <div class="form-group">
+        <label for="adminPassword">Senha:</label>
+        <input type="password" id="adminPassword" required />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="closeAdminLogin()">Cancelar</button>
+        <button type="submit" class="btn">Entrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer style="width:100%;margin-top:32px;text-align:center;padding:24px 0 0 0;background:none;">
+
+</footer>
+
+<script src="produtos.js"></script>
+<script src="script.js"></script>
+
+
+</body>
+</html>
