@@ -7,8 +7,6 @@ let PRODUTOS_DESC_INDEX = [];
 
 const CONFIG = {
   // Cole aqui as URLs geradas pelo gatilho "When an HTTP request is received".
-  urlRRA: "",
-  urlRNC: "",
   urlUnified: "https://default06219a4aa83544d5afaf3926343bfb.89.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9fe290593668452d8daf2db5458f1ff4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2hb_PXhj1NkGLaT-KkFhPcsFZZwzqS1pAMrMqJaR9lA",
 
   // Timeout de requisição
@@ -526,10 +524,9 @@ const ROW_SCHEMA = {
     { key: 'quantidade', placeholder: 'Ex.: 10,5', numeric: true },
     
     { key: 'unitizador', placeholder: 'Ex.: B3031112223' },
-    { key: 'tipoMov',    placeholder: 'Ex.: 7000173973' },
+    { key: 'tipoMov',    placeholder: 'Ex.: 7000181503' },
 
-    { key: 'descricao',  multiSelect: () => BASE_RRA }
-  ],
+    { key: 'descricao',  multiSelect: () => BASE_RRA }],
   RNC: [
     { key: 'codigo',     placeholder: 'Ex.: 55971', list: 'lista_codigos' },
     { key: 'produto',    placeholder: 'Ex.: KLERAT PELLET' },
@@ -582,41 +579,38 @@ function addRow(type) {
   const tr    = document.createElement('tr');
 
   const cells = ROW_SCHEMA[type].map(col => {
+    // RRA: permitir múltiplas avarias (somar seleções)
     if (col.multiSelect) {
-      // Renderiza múltiplos selects para permitir múltiplas avarias
       const options = col.multiSelect();
+
       const selectInicial = `
-  <span class="avaria-item">
-    <select data-k="${col.key}" class="multi-select"
-      onchange="atualizarOutrosSelects(this, '${col.key}')">
-      ${optionList(options, 'Selecione...')}
-    </select>
-    <button type="button"
-      class="btn-remove-avaria"
-      onclick="removerSelect(this, '${col.key}')">✕</button>
-  </span>
-`;
+        <span class="avaria-item">
+          <select data-k="${col.key}" class="multi-select" onchange="atualizarOutrosSelects(this, '${col.key}')">
+            ${optionList(options, 'Selecione...')}
+          </select>
+          <button type="button" class="btn-remove-avaria" onclick="removerSelect(this, '${col.key}')">✕</button>
+        </span>`;
 
-const botaoOutro = `
-  <button type="button"
-    class="btn btn-small"
-    onclick="adicionarNovoSelect(this, '${col.key}')">+ Outro</button>
-`;
+      const botaoOutro = `
+        <button type="button" class="btn btn-small" onclick="adicionarNovoSelect(this, '${col.key}')">+ Outro</button>`;
 
-return `
-<td>
-  <div class="multi-select-group">
-    <div class="avaria-selects">
-      ${selectInicial}
-    </div>
-    ${botaoOutro}
-  </div>
-</td>`;
-
+      return `
+        <td>
+          <div class="multi-select-group">
+            <div class="avaria-selects">
+              ${selectInicial}
+            </div>
+            ${botaoOutro}
+          </div>
+        </td>`;
     }
+
+    // Select comum (RNC e demais)
     if (col.select) {
       return `<td><select data-k="${col.key}">${optionList(col.select(), col.selectPlaceholder)}</select></td>`;
     }
+
+    // Input comum
     const num = col.numeric ? NUMERIC_HANDLER : '';
     return `<td><input data-k="${col.key}" placeholder="${escapeHtml(col.placeholder)}" ${num}/></td>`;
   });
@@ -625,18 +619,20 @@ return `
     `<td><button class="btn danger" type="button" onclick="removeRow(this)">Remover</button></td>`;
 
   tbody.appendChild(tr);
-applyCodigoProdutoToLastRow(type);
-	
+  applyCodigoProdutoToLastRow(type);
 }
 
 function removeRow(btn) { btn.closest('tr')?.remove(); }
 
+
+
 /* ================================
-   NOVA AVARIA
+   RRA: Múltiplas avarias (somar seleções)
 ================================ */
 
 function adicionarNovoSelect(btn, key) {
-  const group = btn.parentElement;
+  const group = btn.closest('.multi-select-group');
+  if (!group) return;
 
   const wrapper = document.createElement('span');
   wrapper.className = 'avaria-item';
@@ -646,6 +642,7 @@ function adicionarNovoSelect(btn, key) {
   novoSelect.setAttribute('data-k', key);
   novoSelect.onchange = () => atualizarOutrosSelects(novoSelect, key);
 
+  // opções disponíveis (evita duplicar)
   const selecionados = [...group.querySelectorAll('.multi-select')]
     .map(s => s.value)
     .filter(v => v);
@@ -667,11 +664,14 @@ function adicionarNovoSelect(btn, key) {
 
   const selectsContainer = group.querySelector('.avaria-selects');
   selectsContainer.appendChild(wrapper);
+
+  atualizarOutrosSelects(novoSelect, key);
 }
 
 function removerSelect(botao, key) {
-  const item = botao.closest('.avaria-item');
-  const group = item.parentElement;
+  const item  = botao.closest('.avaria-item');
+  const group = botao.closest('.multi-select-group');
+  if (!item || !group) return;
 
   // mantém ao menos 1 select
   if (group.querySelectorAll('.avaria-item').length <= 1) return;
@@ -679,39 +679,32 @@ function removerSelect(botao, key) {
   item.remove();
 
   // revalida opções restantes
-  group.querySelectorAll('.multi-select')
-    .forEach(sel => atualizarOutrosSelects(sel, key));
+  group.querySelectorAll('.multi-select').forEach(sel => atualizarOutrosSelects(sel, key));
 }
 
+// Atualiza opções para evitar avarias repetidas no mesmo item
+function atualizarOutrosSelects(selectAlterado, key) {
+  const group = selectAlterado.closest('.multi-select-group');
+  if (!group) return;
 
-// Atualiza as opções dos outros selects quando um é alterado
-function atualizarOutrosSelects(_) {
- const group = _.closest('.multi-select-group');
-
-  // 1️⃣ Pega TODOS os valores selecionados no grupo
   const selecionados = [...group.querySelectorAll('.multi-select')]
     .map(sel => sel.value)
     .filter(v => v);
 
-  // 2️⃣ Reprocessa TODOS os selects (inclusive o alterado)
   group.querySelectorAll('.multi-select').forEach(select => {
     const valorAtual = select.value;
 
-    const options = BASE_RRA.filter(
-      opt => !selecionados.includes(opt) || opt === valorAtual
-    );
+    const options = BASE_RRA.filter(opt => !selecionados.includes(opt) || opt === valorAtual);
 
     select.innerHTML =
       '<option value="">Selecione...</option>' +
       options.map(opt => `
-        <option value="${escapeHtml(opt)}"
-          ${opt === valorAtual ? 'selected' : ''}>
+        <option value="${escapeHtml(opt)}" ${opt === valorAtual ? 'selected' : ''}>
           ${escapeHtml(opt)}
-        </option>
-      `).join('');
+        </option>`).join('');
   });
 }
-``
+function removeRow(btn) { btn.closest('tr')?.remove(); }
 
 /* ================================
    LEITURA DE DADOS
@@ -734,37 +727,47 @@ function readCommon() {
 
 function readRows(type) {
   const keys = ROW_SCHEMA[type].map(c => c.key);
+
   return [...document.querySelectorAll(`#table${type} tbody tr`)]
     .map(tr => {
       const rowData = {};
+
       keys.forEach(k => {
         const col = ROW_SCHEMA[type].find(c => c.key === k);
+
         if (col && col.multiSelect) {
-          // Para multiSelect, pega todos os selects e concatena com " e "
-          const values = [...tr.querySelectorAll(`[data-k="${k}"].multi-select`)].map(s => s.value).filter(v => v);
+          // pega todos os selects do mesmo campo e concatena
+          const values = [...tr.querySelectorAll(`[data-k="${k}"].multi-select`)]
+            .map(s => s.value)
+            .filter(v => v);
           rowData[k] = values.join(' e ');
         } else {
           rowData[k] = tr.querySelector(`[data-k="${k}"]`)?.value?.trim() || '';
         }
       });
+
       return rowData;
     })
     .filter(r => Object.values(r).some(v => v));
 }
-
 /* ================================
    CORREÇÃO 7: validatePayload sem if/else redundante
 ================================ */
 
 function validatePayload(type, payload) {
   const missing = [];
-  if (!payload.dataHoje)      missing.push('Data do reporte');
-  if (!payload.nfNumero)      missing.push('Nº da NF');
-  if (!payload.tipoOperacao)  missing.push('Tipo de operação');
-  if (!payload.emitente)      missing.push('Emitente');
-  if (!payload.destinatario)  missing.push('Destinatário');
-  if (!payload.cliente)       missing.push('Cliente para reporte');
-  if (!payload.agendamento)   missing.push('Agendamento');
+
+  // Os campos do formulário ficam dentro de payload.cabecalho
+  const c = payload.cabecalho || {};
+
+  if (!c.dataHoje)      missing.push('Data do reporte');
+  if (!c.nfNumero)      missing.push('Nº da NF');
+  if (!c.tipoOperacao)  missing.push('Tipo de operação');
+  if (!c.emitente)      missing.push('Emitente');
+  if (!c.destinatario)  missing.push('Destinatário');
+  if (!c.cliente)       missing.push('Cliente para reporte');
+  if (!c.agendamento)   missing.push('Agendamento');
+
   if (!payload.conferente)    missing.push(`Conferente (${type})`);
   if (!payload.itens?.length) missing.push(`Ao menos 1 item no ${type}`);
 
@@ -772,8 +775,9 @@ function validatePayload(type, payload) {
     ? ['produto', 'lote', 'quantidade', 'descricao']
     : ['produto', 'loteNF', 'qtdNF', 'loteFisico', 'qtdFisico', 'descricao'];
 
-  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k])))
+  if ((payload.itens || []).some(it => requiredKeys.some(k => !it[k]))) {
     missing.push('Campos obrigatórios em todos os itens (produto/lotes/qtd/descrição)');
+  }
 
   return missing;
 }
@@ -840,6 +844,9 @@ const payload = {
   }
 
   const missing = validatePayload(currentType, payload);
+    // Debug rápido (opcional): descomente para ver o que está sendo enviado
+    // console.debug("payload", payload);
+    // console.debug("missing", missing);
   if (missing.length) {
     setStatus('err', 'Preencha os campos obrigatórios: ' + missing.join(' • '));
     return;

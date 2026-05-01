@@ -32,8 +32,8 @@
 
 
 .table input[data-k="unitizador"] {
-  min-width: 160px;
-  width: 160px;
+  min-width: 170px;
+  width: 170px;
 }
 
 .autocomplete-item {
@@ -226,49 +226,6 @@ button:focus,
     .table th{background:#2d3238;font-size:13px;color:#f4f6f8}
     .table td input,.table td select{padding:10px;border-radius:6px;min-width:140px;width:100%}
     .table td input[type="text"] { width: 100%; }
-    
-    
-    /* Checkbox group para tipo de avaria */
-    .checkbox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 4px 0;
-      min-width: 350px;
-    }
-    
-    /* Multi-select para tipo de avaria */
-    /* Coluna Tipo de Avaria: grid resolve o tamanho correto */
-    .multi-select-group {
-      display: grid;
-      grid-template-columns: 1fr auto; /* select ocupa tudo, botão é fixo */
-      gap: 8px;
-      align-items: center;
-      width: 100%;
-    }
-
-    .avaria-item select.multi-select {
-      width: 100%;
-      min-width: 0; /* essencial para grid funcionar corretamente */
-    }
-
-
-    .avaria-selects {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-    }
-
-    .table td select[data-k="descricao"] {
-    min-width: 200px;
-  }
-
-    .multi-select-group .btn-small {
-      padding: 8px 12px;
-      font-size: 12px;
-      height: auto;
-    }
     
     /* Tabela RRA - 6 colunas */
     /* Larguras removidas para permitir ajuste automático */
@@ -816,9 +773,10 @@ button:focus,
 
 /* Código – bem menor */
 .table input[data-k="codigo"] {
-  width: 90px;
-  min-width: 90px;
+  width: 110px;
+  min-width: 110px;
   text-align: center;
+  font-weight: 500;
 }
 
 /* Quantidades – menores */
@@ -832,12 +790,32 @@ button:focus,
 
 /* Produto / Descrição – maior */
 .table input[data-k="produto"] {
-  min-width: 280px;
+  min-width: 180px;
 }
 
 .table input[data-k="loteNF"], .table input[data-k="loteFisico"], .table input[data-k="lote"] {
-  min-width: 140px;
-  width: 140px;
+  min-width: 130px;
+  width: 130px;
+  text-align: center;
+}
+
+
+/* ================================
+   RRA: múltiplas avarias (somar seleções)
+================================ */
+.multi-select-group {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.avaria-selects {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
 }
 
 .avaria-item {
@@ -846,18 +824,13 @@ button:focus,
   gap: 4px;
 }
 
-.table td select {
+.avaria-item select.multi-select {
   min-width: 200px;
 }
 
-.avaria-item select.multi-select {
-  width: 100%;
-}
-
-
 .btn-remove-avaria {
   background: transparent;
-  color: #ff6f6f;
+  color: var(--err);
   border: none;
   font-size: 13px;
   cursor: pointer;
@@ -869,23 +842,8 @@ button:focus,
   border-radius: 4px;
 }
 
-/* Faz o grupo ocupar toda a célula */
-.multi-select-group {
-  width: 100%;
-}
-
-/* Bloco onde ficam os selects ocupa tudo */
-.avaria-selects {
-  flex: 1;
-}
-
-/* Select cresce igual aos outros inputs */
-.avaria-item select.multi-select {
-  flex: 1;
-  min-width: 0; /* IMPORTANTE para o flex calcular corretamente */
-}
-
-/* Botão +Outro não encolhe */
-.multi-select-group .btn-small {
-  flex-shrink: 0;
+.btn.btn-small {
+  padding: 8px 12px;
+  font-size: 12px;
+  height: auto;
 }
