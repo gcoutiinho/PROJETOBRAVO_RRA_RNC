@@ -402,10 +402,20 @@ function saveToStorage(key, value) {
   }
 }
 
+
+function fileToBase64Pure(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result);
+    reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -804,7 +814,7 @@ async function submitForm() {
   }
 
   const pdfBase64   = await fileToBase64(pdfInput.files[0]);
-  const fotosBase64 = await Promise.all([...fotosInput.files].map(fileToBase64));
+  const fotos = await Promise.all([...fotosInput.files].map((file, i) => fileToBase64Pure(file).then(b64 => ({ nome: `Foto_${i+1}_${file.name}`, contentType: file.type, conteudo: b64 }))));
 
 
 const payload = {
@@ -829,7 +839,7 @@ const payload = {
 
   anexos: {
     pdf: pdfBase64,
-    fotos: fotosBase64
+    fotos: fotos
   },
 
   conferente: conferente
