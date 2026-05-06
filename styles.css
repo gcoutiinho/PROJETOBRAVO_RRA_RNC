@@ -21,7 +21,7 @@
 
 
 .autocomplete-box {
-  position: absolute;   /* ✅ ESSENCIAL */
+  position: absolute;   /* ESSENCIAL */
   background: #111;
   border: 1px solid #333;
   z-index: 10000;
@@ -127,7 +127,7 @@ textarea::placeholder {
 }
     *{box-sizing:border-box}
     body{margin:0;font-family:Segoe UI, Arial, sans-serif;background:var(--bg);color:var(--text)}
-    header{background:linear-gradient(90deg,#1a1a2e,#16213e);color:#fff;padding:18px 16px}
+    header{position:relative;background:linear-gradient(90deg,#1a1a2e,#16213e);color:#fff;padding:18px 16px}
     header .wrap{max-width:100%;margin:0 auto;display:flex;gap:14px;align-items:center;justify-content:space-between;padding:0 24px}
     header .logo-area{display:flex;align-items:center;gap:14px}
     header .logo{flex-shrink:0;display:flex;align-items:center;justify-content:center;min-width:48px;}
@@ -292,11 +292,12 @@ button:focus,
       header .wrap{flex-direction:column;align-items:flex-start}
     }
 
-/* Menu hambúrguer e toggle de tema */
+/* Menu e alternância de tema */
 .menu-container {
   position: absolute;
-  top: 18px;
+  top: 50%;
   left: 24px;
+  transform: translateY(-50%);
   z-index: 1001;
 }
 .menu-toggle {
@@ -505,7 +506,7 @@ button:focus,
   color: #fff;
 }
 
-/* ================= ADMIN PANEL ================= */
+/* Admin panel */
 .admin-panel {
   margin: 20px auto;
   max-width: 1200px;
@@ -749,9 +750,7 @@ button:focus,
   border-color: #ced4da;
   color: #495057;
 }
-/* ================================
-   Modal customizado (substitui prompt/alert/confirm nativos)
-================================ */
+/* Modal customizado - substitui prompt/alert/confirm nativos */
 .modal-field {
   width: 100%;
   margin-bottom: 16px;
@@ -769,7 +768,7 @@ button:focus,
 
 
 
-/* ===== AJUSTE DE TAMANHO DOS CAMPOS DA TABELA ===== */
+/* Ajuste de tamanho dos campos da tabela */
 
 /* Código – bem menor */
 .table input[data-k="codigo"] {
@@ -800,9 +799,7 @@ button:focus,
 }
 
 
-/* ================================
-   RRA: múltiplas avarias (somar seleções)
-================================ */
+/* RRA: múltiplas avarias */
 .multi-select-group {
   display: grid;
   grid-template-columns: 1fr auto;
