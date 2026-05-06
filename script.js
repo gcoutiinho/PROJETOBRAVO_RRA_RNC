@@ -5,9 +5,9 @@
 let PRODUTOS_CARREGADOS = false
 let PRODUTOS_DESC_INDEX = [];
 
-const CONFIG = {
-  // Cole aqui as URLs geradas pelo gatilho "When an HTTP request is received".
-  urlUnified: "https://default06219a4aa83544d5afaf3926343bfb.89.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9fe290593668452d8daf2db5458f1ff4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2hb_PXhj1NkGLaT-KkFhPcsFZZwzqS1pAMrMqJaR9lA",
+const CONFIG = Object.assign({
+  // URL do Power Automate. Não inclua endpoints reais em um repositório público.
+  urlUnified: "",
 
   // Timeout de requisição
   requestTimeoutMs: 25000,
@@ -35,10 +35,9 @@ const CONFIG = {
     "VENDA"
   ],
 
-  // Senha de administrador armazenada como hash SHA-256.
-  // Substitua o valor abaixo pelo hash da senha de produção.
-  // Não armazene senhas em texto puro no código-fonte.
-  adminPasswordHash: "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+  // Hash SHA-256 da senha admin.
+  // Configure este valor em ambiente privado, não no repositório público.
+  adminPasswordHash: "",
 
   // Listas base (fallback se localStorage estiver vazio)
   BASE_RNC: [
@@ -331,7 +330,7 @@ const CONFIG = {
 "YONON BRASIL DEFENSIVOS AGRICOLAS LTDA / SAO PAULO",
 "ZHONGSHAN QUIMICA DO BRASIL LTDA. / PAULINIA - SP"
   ]
-};
+}, window.PRIVATE_CONFIG || {});
 
 let currentType = 'RRA';
 
@@ -856,7 +855,7 @@ const payload = {
   const url = CONFIG.urlUnified || CONFIG[`url${currentType}`];
 
   if (!url) {
-    setStatus('warn', 'Configure a URL do Power Automate no bloco CONFIG (urlUnified ou urlRRA/urlRNC).');
+    setStatus('warn', 'Configure a URL do Power Automate em um arquivo de configuração local privado.');
     return;
   }
 
