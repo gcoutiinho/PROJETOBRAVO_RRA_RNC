@@ -60,3 +60,30 @@ Portal web para **registro e envio de RRA (Relatório de Avaria)** e **RNC (Rela
 ├── script.js         # Lógica da aplicação
 ├── produtos.js       # Base de produtos (código → descrição)
 └── README.md         # Documentação do projeto
+```
+
+## 🔐 Configuração Privada
+
+Para publicar este projeto no GitHub sem expor detalhes sensíveis, use um arquivo de configuração local privado.
+
+- Não adicione endpoints do Power Automate diretamente no código público.
+- Não comite hashes de senha ou credenciais.
+- Crie um arquivo `local-config.js` apenas no ambiente interno / privado.
+
+Exemplo de `local-config.js`:
+
+```js
+window.PRIVATE_CONFIG = {
+  urlUnified: 'https://seu-endpoint-interno-do-power-automate',
+  adminPasswordHash: 'seu-hash-sha256-aqui'
+};
+```
+
+Este repositório inclui uma amostra de configuração privada em `local-config.sample.js`.
+
+### Uso interno
+
+1. Copie `local-config.sample.js` para `local-config.js`.
+2. Preencha `urlUnified` e `adminPasswordHash` com valores do ambiente interno.
+3. Na cópia interna do projeto, adicione `<script src="local-config.js"></script>` antes de `<script src="script.js"></script>` em `index.html`.
+4. Não adicione `local-config.js` ao Git.

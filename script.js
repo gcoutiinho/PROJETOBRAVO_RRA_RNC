@@ -1,13 +1,13 @@
 /**********************
- * CONFIG - velho
+ * CONFIGURAÇÕES
  **********************/
 
 let PRODUTOS_CARREGADOS = false
 let PRODUTOS_DESC_INDEX = [];
 
-const CONFIG = {
-  // Cole aqui as URLs geradas pelo gatilho "When an HTTP request is received".
-  urlUnified: "https://default06219a4aa83544d5afaf3926343bfb.89.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9fe290593668452d8daf2db5458f1ff4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2hb_PXhj1NkGLaT-KkFhPcsFZZwzqS1pAMrMqJaR9lA",
+const CONFIG = Object.assign({
+  // URL do Power Automate. Não inclua endpoints reais em um repositório público.
+  urlUnified: "",
 
   // Timeout de requisição
   requestTimeoutMs: 25000,
@@ -35,15 +35,9 @@ const CONFIG = {
     "VENDA"
   ],
 
-  // CORREÇÃO 1: Senha nunca fica em texto puro no código.
-  // Use um hash SHA-256 da senha real. Para gerar o hash:
-  //   1. Abra o console do navegador (F12)
-  //   2. Cole e execute:
-  //      crypto.subtle.digest('SHA-256', new TextEncoder().encode('SUA_SENHA'))
-  //        .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
-  //   3. Copie o hash gerado e substitua o valor abaixo.
-  // O hash abaixo corresponde à senha "admin123" — TROQUE para produção!
-  adminPasswordHash: "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+  // Hash SHA-256 da senha admin.
+  // Configure este valor em ambiente privado, não no repositório público.
+  adminPasswordHash: "",
 
   // Listas base (fallback se localStorage estiver vazio)
   BASE_RNC: [
@@ -336,7 +330,7 @@ const CONFIG = {
 "YONON BRASIL DEFENSIVOS AGRICOLAS LTDA / SAO PAULO",
 "ZHONGSHAN QUIMICA DO BRASIL LTDA. / PAULINIA - SP"
   ]
-};
+}, window.PRIVATE_CONFIG || {});
 
 let currentType = 'RRA';
 
@@ -379,7 +373,7 @@ function escapeHtml(str) {
     .replaceAll("'",  '&#039;');
 }
 
-// CORREÇÃO 1: hash SHA-256 via Web Crypto API (sem bibliotecas externas)
+// Retorna hash SHA-256 usando a Web Crypto API.
 async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -402,19 +396,29 @@ function saveToStorage(key, value) {
   }
 }
 
+
+function fileToBase64Pure(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result);
+    reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
 /* ================================
-   CORREÇÃO 6: Modal customizado
-   Substitui prompt() / alert() / confirm() nativos
-   que bloqueiam a UI e não podem ser estilizados
+   MODAL CUSTOMIZADO
+   Substitui prompt() / alert() / confirm() nativos.
+   Permite estilização e melhor controle de interação.
 ================================ */
 
 function showModal({ title, message = '', input = false, placeholder = '', confirmText = 'Confirmar', cancelText = 'Cancelar', danger = false }) {
@@ -492,7 +496,7 @@ function switchForm(type) {
   document.getElementById('form-RRA').style.display = type === 'RRA' ? 'block' : 'none';
   document.getElementById('form-RNC').style.display = type === 'RNC' ? 'block' : 'none';
 
-  // ✅ RESET DOS ITENS (ESSENCIAL)
+  // Reset dos itens ao alternar a aba
   resetItensPorTipo('RRA');
   resetItensPorTipo('RNC');
 
@@ -505,8 +509,8 @@ function optionList(options, placeholder = 'Selecione...') {
 }
 
 /* ================================
-   CORREÇÃO 2: addRow sem duplicação
-   Schema centralizado elimina o if/else RRA vs RNC
+   SCHEMA DE LINHAS
+   Estrutura única para RRA e RNC.
 ================================ */
 
 
@@ -555,10 +559,10 @@ function bindCodigoProdutoRow(tr) {
 
   if (!inputProduto) return;
 
-  // ✅ autocomplete por descrição
+  // Autocomplete por descrição
   attachProdutoAutocomplete(inputProduto, inputCodigo);
 
-  // ✅ lookup por código (se existir)
+  // Lookup automático por código, quando disponível
   if (inputCodigo) {
     inputCodigo.addEventListener('blur', () => {
       const codigo = inputCodigo.value.trim();
@@ -725,6 +729,16 @@ function readCommon() {
   };
 }
 
+function formatarListaComE(lista) {
+  if (!Array.isArray(lista) || lista.length === 0) return '';
+  if (lista.length === 1) return lista[0];
+  if (lista.length === 2) return `${lista[0]} E ${lista[1]}`;
+
+  const ultimo = lista[lista.length - 1];
+  const anteriores = lista.slice(0, -1).join(', ');
+  return `${anteriores} E ${ultimo}`;
+}
+
 function readRows(type) {
   const keys = ROW_SCHEMA[type].map(c => c.key);
 
@@ -740,7 +754,7 @@ function readRows(type) {
           const values = [...tr.querySelectorAll(`[data-k="${k}"].multi-select`)]
             .map(s => s.value)
             .filter(v => v);
-          rowData[k] = values.join(' e ');
+          rowData[k] = formatarListaComE(values);
         } else {
           rowData[k] = tr.querySelector(`[data-k="${k}"]`)?.value?.trim() || '';
         }
@@ -751,7 +765,8 @@ function readRows(type) {
     .filter(r => Object.values(r).some(v => v));
 }
 /* ================================
-   CORREÇÃO 7: validatePayload sem if/else redundante
+   VALIDAÇÃO DE PAYLOAD
+   Verifica campos obrigatórios sem redundância.
 ================================ */
 
 function validatePayload(type, payload) {
@@ -783,7 +798,8 @@ function validatePayload(type, payload) {
 }
 
 /* ================================
-   CORREÇÃO 4: submitForm — readRows chamado uma única vez
+   SUBMISSÃO DE FORMULÁRIO
+   Lê os itens apenas uma vez antes do envio.
 ================================ */
 
 async function submitForm() {
@@ -804,7 +820,7 @@ async function submitForm() {
   }
 
   const pdfBase64   = await fileToBase64(pdfInput.files[0]);
-  const fotosBase64 = await Promise.all([...fotosInput.files].map(fileToBase64));
+  const fotos = await Promise.all([...fotosInput.files].map((file, i) => fileToBase64Pure(file).then(b64 => ({ nome: `Foto_${i+1}_${file.name}`, contentType: file.type, conteudo: b64 }))));
 
 
 const payload = {
@@ -829,7 +845,7 @@ const payload = {
 
   anexos: {
     pdf: pdfBase64,
-    fotos: fotosBase64
+    fotos: fotos
   },
 
   conferente: conferente
@@ -839,14 +855,11 @@ const payload = {
   const url = CONFIG.urlUnified || CONFIG[`url${currentType}`];
 
   if (!url) {
-    setStatus('warn', 'Configure a URL do Power Automate no bloco CONFIG (urlUnified ou urlRRA/urlRNC).');
+    setStatus('warn', 'Configure a URL do Power Automate em um arquivo de configuração local privado.');
     return;
   }
 
   const missing = validatePayload(currentType, payload);
-    // Debug rápido (opcional): descomente para ver o que está sendo enviado
-    // console.debug("payload", payload);
-    // console.debug("missing", missing);
   if (missing.length) {
     setStatus('err', 'Preencha os campos obrigatórios: ' + missing.join(' • '));
     return;
@@ -941,8 +954,8 @@ function initMenu() {
 }
 
 /* ================================
-   CORREÇÃO 3: getListMeta() elimina todos os if/else repetidos
-   nas funções de admin (addItem, updateItem, removeItem, renderItems)
+   META DE LISTAS DE ADMIN
+   Retorna metadados centralizados para cada tipo.
 ================================ */
 
 function getListMeta(type) {
@@ -1009,8 +1022,8 @@ async function removeItem(type, index) {
 }
 
 /* ================================
-   CORREÇÃO 5: Clientes & Emails
-   Usa dataset em vez de onclick inline com dados do usuário
+   ADMIN CLIENTES & EMAILS
+   Renderiza lista de clientes e emails com ações.
 ================================ */
 
 function renderClients() {
@@ -1110,7 +1123,7 @@ function removeEmail(clientName, index) {
 
 /* ================================
    ADMIN — LOGIN / PAINEL
-   CORREÇÃO 1: compara hash SHA-256, nunca texto puro
+   Compara hash SHA-256 em vez de texto puro.
 ================================ */
 
 function initAdmin() {
@@ -1244,8 +1257,6 @@ function indexarProdutos() {
 
   PRODUTOS_DESC_INDEX = index;
   PRODUTOS_CARREGADOS = true;
-
-  console.log(`✅ Produtos indexados: ${index.length}`);
 }
 
 function debounce(fn, delay = 250) {
@@ -1264,7 +1275,7 @@ function posicionarAutocomplete(box, input) {
 
   const listHeight = box.offsetHeight || 360;
 
-  // ✅ abre para cima, colada ao input (no DOCUMENTO)
+  // Abre a caixa acima do input e a posiciona no documento
   box.style.top  = `${rect.top + scrollY - listHeight - 4}px`;
   box.style.left = `${rect.left + scrollX}px`;
   box.style.width = `${rect.width}px`;
@@ -1322,7 +1333,7 @@ function attachProdutoAutocomplete(inputProduto, inputCodigo) {
       </div>`
     ).join('');
 
-    // ✅ posiciona UMA ÚNICA VEZ
+    // Posiciona apenas uma vez enquanto o box estiver ativo
     if (!posicionada) {
       posicionarAutocomplete(box, inputProduto);
       posicionada = true;
