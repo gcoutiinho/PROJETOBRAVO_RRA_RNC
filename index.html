@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <title>Portal RRA / RNC — Bravo Serviços Logísticos</title>
-
+<link rel="icon" href="Bravo V.png" type="image/png" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 
@@ -17,7 +17,9 @@
 <header>
   <div class="wrap">
     <div class="logo-area">
-      <div class="logo"></div>
+      <div class="logo">
+        <img src="logo.png" alt="Logo Bravo Serviços Logísticos" />
+      </div>
       <div class="brand-text">
         <h1>Bravo Serviços Logísticos</h1>
         <small>Portal de Reporte — RRA / RNC</small>
@@ -39,9 +41,6 @@
           <label for="themeToggle" class="toggle-slider"></label>
           <span class="theme-text">Escuro</span>
         </div>
-      </div>
-      <div class="menu-item">
-        <button class="menu-btn" id="adminBtn" type="button">Admin</button>
       </div>
     </div>
   </div>
@@ -67,6 +66,12 @@
           <label for="dataHoje">Data do reporte</label>
           <input id="dataHoje" type="date" readonly aria-label="Data do reporte" aria-describedby="hint-data" />
           <span class="hint" id="hint-data">Preenchido automaticamente</span>
+        </div>
+
+        <div class="field sm">
+          <label for="reporterName">Nome de quem reporta</label>
+          <input id="reporterName" placeholder="Seu nome" aria-label="Nome do Repórter" />
+          <span class="hint">Nome para o relatório e planilha</span>
         </div>
 
         <div class="field sm">
@@ -238,81 +243,8 @@
   </div>
 </main>
 
-<!-- Interface de administração -->
-<div id="adminPanel" class="admin-panel" style="display:none;">
-  <div class="card">
-    <div class="admin-header">
-      <h2>Administração do Sistema</h2>
-      <button class="btn secondary" id="logoutBtn">Sair</button>
-    </div>
 
-    <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="clients">Clientes & Emails</button>
-      <button class="admin-tab" data-tab="rra">Tipos de Avaria (RRA)</button>
-      <button class="admin-tab" data-tab="rnc">Tipos de Não Conformidade (RNC)</button>
-      <button class="admin-tab" data-tab="operations">Tipos de Operação</button>
-    </div>
-
-    <div class="admin-content">
-      <!-- Clientes e emails -->
-      <div class="admin-section active" id="clients-section">
-        <h3>Gerenciar Clientes e Destinatários</h3>
-        <div class="admin-clients">
-          <div class="client-list" id="clientList"></div>
-          <button class="btn secondary" id="addClientBtn">+ Adicionar Cliente</button>
-        </div>
-      </div>
-
-      <!-- Tipos de avaria (RRA) -->
-      <div class="admin-section" id="rra-section">
-        <h3>Gerenciar Tipos de Avaria (RRA)</h3>
-        <div class="admin-items">
-          <div class="item-list" id="rraList"></div>
-          <button class="btn secondary" id="addRraBtn">+ Adicionar Tipo</button>
-        </div>
-      </div>
-
-      <!-- Tipos de não conformidade (RNC) -->
-      <div class="admin-section" id="rnc-section">
-        <h3>Gerenciar Tipos de Não Conformidade (RNC)</h3>
-        <div class="admin-items">
-          <div class="item-list" id="rncList"></div>
-          <button class="btn secondary" id="addRncBtn">+ Adicionar Tipo</button>
-        </div>
-      </div>
-
-      <!-- Tipos de operação -->
-      <div class="admin-section" id="operations-section">
-        <h3>Gerenciar Tipos de Operação</h3>
-        <div class="admin-items">
-          <div class="item-list" id="operationsList"></div>
-          <button class="btn secondary" id="addOperationBtn">+ Adicionar Tipo</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal de login do administrador -->
-<div id="adminLoginModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <h3>Login Administrador</h3>
-    <form id="adminLoginForm">
-      <div class="form-group">
-        <label for="adminPassword">Senha:</label>
-        <input type="password" id="adminPassword" required />
-      </div>
-      <div class="modal-actions">
-        <button type="button" class="btn secondary" onclick="closeAdminLogin()">Cancelar</button>
-        <button type="submit" class="btn">Entrar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<footer style="width:100%;margin-top:32px;text-align:center;padding:24px 0 0 0;background:none;">
-
-</footer>
+<footer class="app-footer"></footer>
 
 <script src="produtos.js"></script>
 <script src="script.js"></script>

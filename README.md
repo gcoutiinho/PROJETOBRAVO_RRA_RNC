@@ -1,89 +1,103 @@
-# 📦 Portal RRA / RNC – Bravo Serviços Logísticos
+# Portal RRA / RNC — Bravo Serviços Logísticos
 
-Portal web para **registro e envio de RRA (Relatório de Avaria)** e **RNC (Relatório de Não Conformidade)**, integrado ao **Power Automate**, com interface moderna, acessível e painel administrativo embutido.
-
----
-
-## 🚀 Funcionalidades
-
-### ✅ Operacionais
-- Registro de **RRA (Avaria)** e **RNC (Não Conformidade)**
-- Alternância dinâmica entre RRA e RNC por abas
-- Inclusão de múltiplos itens por reporte
-- Upload de:
-  - 📄 PDF escaneado (RRA/RNC)
-  - 📸 Múltiplas fotos
-- Envio automático via **Power Automate (HTTP Request)**
-- Mensagens de status (sucesso, erro e alerta)
-- Tema **claro / escuro** com persistência no navegador
+Aplicação web para registro e envio de **RRA (Relatório de Avaria)** e **RNC (Relatório de Não Conformidade)**, com envio de dados para um fluxo do **Power Automate** e interface de uso simples.
 
 ---
 
-### ✅ Inteligência de Cadastro
-- **Autocomplete de produtos** por descrição
-- Preenchimento automático do produto a partir do código
-- Seleção de **múltiplas avarias** no RRA
-- Prevenção de duplicação de avarias no mesmo item
-- Máscaras e validação para campos numéricos
+## Visão Geral
+
+O projeto oferece um formulário de reporte com duas abas:
+
+- **RRA** — relatório de avarias
+- **RNC** — relatório de não conformidade
+
+Cada tipo de reporte permite:
+
+- cadastro de múltiplos itens
+- upload de **PDF escaneado**
+- upload de **múltiplas fotos**
+- seleção de cliente e destinatários de email
+- envio de payload em JSON para um endpoint do Power Automate
+
+A interface também suporta:
+
+- troca de tema **claro / escuro** com persistência no navegador
+- preenchimento automático de produtos via `produtos.js`
+- seleção de tipos de operação e categorias de avaria/não conformidade
 
 ---
 
-### ✅ Painel Administrativo
-- Login protegido por **hash SHA-256** (sem senha em texto puro)
-- Gerenciamento via interface gráfica:
-  - 📧 Clientes e seus emails de reporte
-  - ⚠️ Tipos de Avaria (RRA)
-  - ❌ Tipos de Não Conformidade (RNC)
-  - 🔄 Tipos de Operação
-- Persistência usando **localStorage**
-- Modais customizados (substituem `alert`, `confirm`, `prompt`)
+## Principais recursos
+
+- Abas de alternância entre **RRA** e **RNC**
+- Registro de itens com campos específicos para cada tipo
+- Upload de anexos: **PDF + fotos**
+- Validação de campos obrigatórios antes do envio
+- Mensagens de status de envio (sucesso, erro, timeout)
+- Tema claro/escuro mantido em `localStorage`
+- Autocomplete de produtos por descrição e lookup por código
+- Listas de clientes, tipos de avaria/RNC e operações configuráveis no código
 
 ---
 
-## 🛠 Tecnologias Utilizadas
-
-- **HTML5** – Estrutura semântica e acessível  
-- **CSS3** – Tema escuro/claro, layout responsivo e UI moderna  
-- **JavaScript (Vanilla)** – Toda a lógica da aplicação  
-- **Power Automate** – Recebimento das informações e envio de emails  
-- **Web Crypto API** – Segurança de senha  
-- **LocalStorage** – Persistência local de dados administrativos  
-
----
-
-## 📁 Estrutura do Projeto
+## Arquivos do projeto
 
 ```text
 /
-├── index.html        # Página principal
-├── styles.css        # Estilos (tema dark/light + admin)
-├── script.js         # Lógica da aplicação
-├── produtos.js       # Base de produtos (código → descrição)
-└── README.md         # Documentação do projeto
+├── index.html     # Página principal e formulários
+├── styles.css     # Estilos do layout, tabela, botões e tema
+├── script.js      # Lógica da aplicação e envio de dados
+├── logo.png       # Logo da Bravo Serviços Logísticos
+├── Bravo V.png    # Favicon / ícone da aplicação
+├── LICENSE        # Licença do projeto
+└── README.md      # Documentação atual
 ```
 
-## 🔐 Configuração Privada
+> Observação: `index.html` referencia `produtos.js` para autocomplete de produtos. Se esse arquivo não estiver presente no repositório, a funcionalidade de busca por código/descrição ficará desativada.
 
-Para publicar este projeto no GitHub sem expor detalhes sensíveis, use um arquivo de configuração local privado.
+---
 
-- Não adicione endpoints do Power Automate diretamente no código público.
-- Não comite hashes de senha ou credenciais.
-- Crie um arquivo `local-config.js` apenas no ambiente interno / privado.
+## Como usar
 
-Exemplo de `local-config.js`:
+1. Abra `index.html` em um navegador moderno.
+2. Selecione a aba **RRA** ou **RNC**.
+3. Preencha os dados da nota fiscal, cliente e relatório.
+4. Adicione ao menos um item na tabela.
+5. Faça upload do **PDF** e das **fotos**.
+6. Clique em **Enviar**.
 
-```js
-window.PRIVATE_CONFIG = {
-  urlUnified: 'https://seu-endpoint-interno-do-power-automate',
-  adminPasswordHash: 'seu-hash-sha256-aqui'
-};
-```
+---
 
-Este repositório inclui uma amostra de configuração privada em `local-config.sample.js`.
+## Configuração de envio
 
-### Uso interno
+O endpoint do Power Automate está definido no objeto `CONFIG` em `script.js`:
 
-1. Copie `local-config.sample.js` para `local-config.js`.
-2. Preencha `urlUnified` e `adminPasswordHash` com valores do ambiente interno.
-3. Na cópia interna do projeto, adicione `<script src="local-config.js"></script>` antes de `<script src="script.js"></script>` em `index.html`.
-4. Não adicione `local-config.js` ao Git.
+- `urlUnified` — URL padrão para envio dos reports
+- `requestTimeoutMs` — timeout da requisição
+
+Se necessário, você pode alterar ou separar URLs por tipo de reporte no próprio arquivo `script.js`.
+
+---
+
+## Personalização
+
+### Lista de clientes e emails
+
+Os destinatários são definidos em `CONFIG.emailsClientes` dentro de `script.js`.
+
+### Tipos de operação
+
+Os valores disponíveis no select de operação são carregados de `CONFIG.tiposOperacao`.
+
+### Tipos de RRA e RNC
+
+As listas padrão aparecem em `CONFIG.BASE_RRA` e `CONFIG.BASE_RNC`.
+
+---
+
+## Observações importantes
+
+- O botão **Enviar** dispara uma requisição `POST` para o endpoint configurado.
+- Se `urlUnified` não estiver configurado, a app exibe um aviso e não envia o formulário.
+- A configuração do endpoint está diretamente em `script.js` dentro do objeto `CONFIG`.
+- O projeto é construído em **HTML + CSS + JavaScript puro**; não há dependência de frameworks.
